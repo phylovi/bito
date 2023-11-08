@@ -393,9 +393,10 @@ class TPEngine {
     return GetParsimonyEvalEngine().GetTopTreeScoreWithEdge(edge_id);
   }
   // Get the Top Tree from the DAG containing the proposed NNI.
-  double GetTopTreeScoreWithProposedNNI(const NNIOperation &post_nni,
-                                        const NNIOperation &pre_nni,
-                                        const size_t spare_offset = 0);
+  double GetTopTreeScoreWithProposedNNI(
+      const NNIOperation &post_nni, const NNIOperation &pre_nni,
+      const size_t spare_offset = 0,
+      std::optional<BitsetEdgeIdMap> best_edge_map_opt = std::nullopt);
 
   // Initialize EvalEngine.
   void InitializeScores();
@@ -488,7 +489,6 @@ class TPEngine {
   std::map<TreeId, Node::Topology> tree_id_map_;
   std::map<TreeId, double> tree_score_map_;
 
-  // TODO can we remove this?
   // Leaf labels.
   SitePattern site_pattern_;
   EigenVectorXd site_pattern_weights_;
@@ -511,6 +511,11 @@ class TPEngine {
   GPDAG *dag_ = nullptr;
   // Un-owned reference to GraftDAG.
   GraftDAG *graft_dag_ = nullptr;
+
+  // Map that tracks the optimal edge to reference for each individual edge.
+  BitsetEdgeIdMap best_edge_map_;
+  // Use best edge map.
+  bool do_use_best_edge_map_ = true;
 
   // A map showing which Evaluation Engines are "in use".  Several engines may be
   // instatiated, but may or may not be currently used for computation, and therefore

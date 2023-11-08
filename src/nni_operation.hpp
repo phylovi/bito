@@ -171,6 +171,7 @@ using NNIVector = std::vector<NNIOperation>;
 using NNIClade = NNIOperation::NNIClade;
 using NNICladeEnum = NNIOperation::NNICladeEnum;
 using NNIAdjacent = NNIOperation::NNIAdjacent;
+using NNIAdjacentEnum = NNIOperation::NNIAdjacentEnum;
 
 template <typename T>
 struct NNIAdjacentMap {
@@ -181,6 +182,21 @@ struct NNIAdjacentMap {
   T right_child;
 
   T &operator[](NNIAdjacent nni_edge) {
+    switch (nni_edge) {
+      case NNIAdjacent::Parent:
+        return parent;
+      case NNIAdjacent::Sister:
+        return sister;
+      case NNIAdjacent::Focal:
+        return focal;
+      case NNIAdjacent::LeftChild:
+        return left_child;
+      case NNIAdjacent::RightChild:
+        return right_child;
+    }
+    Failwith("ERROR: Invalid enum given.");
+  }
+  const T &operator[](NNIAdjacent nni_edge) const {
     switch (nni_edge) {
       case NNIAdjacent::Parent:
         return parent;

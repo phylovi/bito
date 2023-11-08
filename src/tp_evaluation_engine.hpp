@@ -28,9 +28,6 @@ class TPEngine;
 using BitsetEdgeIdMap = std::unordered_map<Bitset, EdgeId>;
 
 struct LocalPVIds {
-  PVId grandparent_p_;
-  PVId grandparent_phatfocal_;
-  PVId grandparent_phatsister_;
   PVId grandparent_rhat_;
   PVId grandparent_rfocal_;
   PVId grandparent_rsister_;
@@ -54,7 +51,7 @@ struct LocalPVIds {
   PVId rightchild_p_;
 };
 
-// Compiles all info about proposed NNI needed for computing score.
+// Compiles all data about proposed NNI needed for computing score.
 // "refs" contain the data derived from the pre-NNI remapped to be referenced (not
 // modified) for computations. "temps" contain temporary data locations for performing
 // computations. "adjs" contains data actually adjacent to proposed NNI.
@@ -270,13 +267,30 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   void IncrementOptimizationCount() { branch_handler_.IncrementOptimizationCount(); }
   void ResetOptimizationCount() { branch_handler_.ResetOptimizationCount(); }
 
-  size_t IsOptimizeNewEdges() const { return optimize_new_edges_; }
-  void SetOptimizeNewEdges(const bool optimize_new_edges) {
-    optimize_new_edges_ = optimize_new_edges;
+  size_t IsOptimizeNewEdges() const { return do_optimize_new_edges_; }
+  void SetOptimizeNewEdges(const bool do_optimize_new_edges) {
+    do_optimize_new_edges_ = do_optimize_new_edges;
   }
   size_t GetOptimizationMaxIteration() const { return optimize_max_iter_; }
   void SetOptimizationMaxIteration(const size_t optimize_max_iter) {
     optimize_max_iter_ = optimize_max_iter;
+  }
+
+  // Proposed NNI Settings
+  bool IsInitProposedBranchLengthsWithDAG() const {
+    return do_init_proposed_branch_lengths_with_dag_;
+  }
+  void SetInitProposedBranchLengthsWithDAG(
+      const bool do_init_proposed_branch_lengths_with_dag) {
+    do_init_proposed_branch_lengths_with_dag_ =
+        do_init_proposed_branch_lengths_with_dag;
+  }
+  bool IsFixProposedBranchLengthsFromDAG() const {
+    return do_fix_proposed_branch_lengths_from_dag_;
+  }
+  void SetFixProposedBranchLengthsFromDAG(
+      const bool do_fix_proposed_branch_lengths_from_dag) {
+    do_fix_proposed_branch_lengths_from_dag_ = do_fix_proposed_branch_lengths_from_dag;
   }
 
   PLVEdgeHandler &GetPVs() { return likelihood_pvs_; }
@@ -406,10 +420,12 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   // Branch length parameters for DAG.
   DAGBranchHandler branch_handler_;
 
-  // Determines whether new edges are optimized.
-  bool optimize_new_edges_ = true;
-  // Determines whether to use DAG branch lengths or optimize all proposed edges.
-  bool use_dag_branch_lengths_for_proposed_nnis_ = false;
+  // Whether new edges are optimized.
+  bool do_optimize_new_edges_ = true;
+  // Whether to referehce DAG to initialize branch lengths (otherwise use default).
+  bool do_init_proposed_branch_lengths_with_dag_ = true;
+  // Whether to fix branch lengths contained in DAG or optimize them.
+  bool do_fix_proposed_branch_lengths_from_dag_ = true;
   // Number of optimization iterations.
   size_t optimize_max_iter_ = 5;
 
@@ -419,7 +435,7 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   // Number of pvs to allocate per node in DAG.
   static constexpr size_t pv_count_per_node_ = PLVTypeEnum::Count;
   // Number of spare nodes needed to be allocated per proposed NNI.
-  static constexpr size_t spare_nodes_per_nni_ = 15;
+  static constexpr size_t spare_nodes_per_nni_ = 12;
   // Number of spare edges needed to be allocated per proposed NNI.
   static constexpr size_t spare_edges_per_nni_ = 6;
 

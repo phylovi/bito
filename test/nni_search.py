@@ -37,6 +37,7 @@ do_print_scored_nnis = False
 do_print_accepted_nnis = True
 do_print_summary = True
 # diagnostics: track changes to the DAG
+do_run_tracker = True
 do_print_tracker_summary = True
 do_check_for_dag_changes = True
 do_check_for_nni_score_changes = True
@@ -736,7 +737,7 @@ class NNISearchInstance:
 
 
 class Tracker:
-    def __init__(self, args, dag_inst):
+    def __init__(self, args, dag_inst, run_tracker=do_run_tracker):
         self.args = args
         self.dag_inst = dag_inst
         self.old_choice_map = {}
@@ -750,7 +751,7 @@ class Tracker:
         # tracks what iter pcsp/subsplit was added to the DAG.
         self.timedag_pcsps = {}
         self.timedag_subsplits = {}
-        self.run_tracker = True
+        self.run_tracker = run_tracker
         self.tolerance = 1e-3
 
         # track mismatches
@@ -764,6 +765,8 @@ class Tracker:
         return
 
     def is_pcsp_in_watchlist(self, pcsp):
+        if (not self.run_tracker):
+            return
         parent_hash = Utils.subsplit_to_hash(
             pcsp.pcsp_get_parent_subsplit(), abbr)
         child_hash = Utils.subsplit_to_hash(
@@ -781,6 +784,8 @@ class Tracker:
         return
 
     def update_timedag_subsplits(self, iter_count):
+        if (not self.run_tracker):
+            return
         for pcsp in self.dag_inst.get_dag().build_set_of_node_bitsets():
             if pcsp not in self.timedag_subsplits:
                 self.timedag_subsplits[pcsp] = iter_count
@@ -1012,7 +1017,7 @@ class Tracker:
                     mismatch_cnt += 1
                     pcsp_hash = Utils.pcsp_to_hash(pcsp, abbr)
                     print(
-                        f"  DAG_VS_PROP_SCORE_{result}: {pcsp_hash} => {round(dag_score, digits)} {round(proposed_score, digits)} | {round(score_diff, digits)}")
+                        f"  #DAG_VS_PROP_SCORE_{result}: {pcsp_hash} => {round(dag_score, digits)} {round(proposed_score, digits)} | {round(score_diff, digits)}")
                 else:
                     match_cnt += 1
         self.compare_score_mismatches += mismatch_cnt

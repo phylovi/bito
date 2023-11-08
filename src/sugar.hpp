@@ -78,11 +78,20 @@ inline std::string TagTaxonMapToString(const TagStringMap &tag_taxon_map) {
   return str.str();
 }
 
+// Format hash in hexidecimal notation.
 inline std::string HashToString(const size_t hash, const size_t length = 16) {
   std::stringstream ss;
   ss << "0x" << std::uppercase << std::hex << std::setw(16) << std::setfill('0')
      << hash;
   return ss.str().substr(0, length + 2);
+}
+
+// Format double as scientific notation.
+inline std::string DblToScientific(const double value, const int precision = 3) {
+  std::stringstream ss;
+  ss.precision(precision);
+  ss << std::scientific << value;
+  return ss.str();
 }
 
 // We implement problems in terms of exceptions. That means that they work great
