@@ -200,6 +200,7 @@ using NNIAdjEdgeIds = NNIAdjacentMap<EdgeId>;
 using NNIAdjNodeIds = NNIAdjacentMap<NodeId>;
 using NNIAdjBools = NNIAdjacentMap<bool>;
 using NNIAdjDoubles = NNIAdjacentMap<double>;
+using NNIAdjPCSPs = NNIAdjacentMap<Bitset>;
 using NNIAdjEdgeIdMap = NNIAdjacentMap<std::pair<EdgeId, EdgeId>>;
 
 // This is how we inject a hash routine and a custom comparator into the std

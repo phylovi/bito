@@ -580,23 +580,81 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithEdge(const EdgeId edge_id) 
 double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
     const NNIOperation &post_nni, const NNIOperation &temp_pre_nni,
     const size_t spare_offset, std::optional<BitsetEdgeIdMap> best_edge_map_opt) {
-  const auto nni_info =
+  auto nni_info =
       GetProposedNNIInfo(post_nni, temp_pre_nni, spare_offset, best_edge_map_opt);
   const auto &temp_pv_ids = nni_info.temp_pv_ids;
   const auto &temp_edge_ids = nni_info.temp_edge_ids;
   const auto &ref_pv_ids = nni_info.ref_pv_ids;
   const auto &ref_edge_ids = nni_info.ref_edge_ids;
-  // const auto &ref_node_ids = nni_info.ref_node_ids;
+  const auto &ref_node_ids = nni_info.ref_node_ids;
   // const auto &adj_edge_ids = nni_info.adj_edge_ids;
-  const auto &do_optimize_edge = nni_info.do_optimize_edge;
+  const auto &adj_pcsps = nni_info.adj_pcsps;
+  auto &do_optimize_edge = nni_info.do_optimize_edge;
 
-  // Copy branch lengths over from pre-edge to post-edge.
-  branch_handler_(temp_edge_ids.parent) = branch_handler_(ref_edge_ids.parent);
-  branch_handler_(temp_edge_ids.focal) = branch_handler_(ref_edge_ids.focal);
-  branch_handler_(temp_edge_ids.sister) = branch_handler_(ref_edge_ids.sister);
-  branch_handler_(temp_edge_ids.left_child) = branch_handler_(ref_edge_ids.left_child);
-  branch_handler_(temp_edge_ids.right_child) =
-      branch_handler_(ref_edge_ids.right_child);
+  // If we have already established a best_edge_map by traversing all new NNIs to be
+  // added, use this branch length.  Otherwise, use the edge_map from current
+  // pre-NNI.
+  if (best_edge_map_opt.has_value()) {
+    auto &best_edge_map = best_edge_map_opt.value();
+    auto AssignBestBranchLength = [this, &best_edge_map](const EdgeId post_edge_id,
+                                                         const Bitset &pcsp) {
+      const auto pre_edge_id = best_edge_map[pcsp];
+      branch_handler_(post_edge_id) = branch_handler_(pre_edge_id);
+    };
+    std::ignore = AssignBestBranchLength;
+    // Copy branch lengths over from best_edge_map.
+    AssignBestBranchLength(temp_edge_ids.parent, adj_pcsps.parent);
+    AssignBestBranchLength(temp_edge_ids.focal, adj_pcsps.focal);
+    AssignBestBranchLength(temp_edge_ids.sister, adj_pcsps.sister);
+    AssignBestBranchLength(temp_edge_ids.left_child, adj_pcsps.left_child);
+    AssignBestBranchLength(temp_edge_ids.right_child, adj_pcsps.right_child);
+  } else {
+    // Copy branch lengths over from pre-edge to post-edge.
+    branch_handler_(temp_edge_ids.parent) = branch_handler_(ref_edge_ids.parent);
+    branch_handler_(temp_edge_ids.focal) = branch_handler_(ref_edge_ids.focal);
+    branch_handler_(temp_edge_ids.sister) = branch_handler_(ref_edge_ids.sister);
+    branch_handler_(temp_edge_ids.left_child) =
+        branch_handler_(ref_edge_ids.left_child);
+    branch_handler_(temp_edge_ids.right_child) =
+        branch_handler_(ref_edge_ids.right_child);
+  }
+
+  // Update branch lengths if edge already exists in DAG.
+  auto FindBranchLengthIfExists = [&](const Bitset &parent_subsplit,
+                                      const Bitset &child_subsplit,
+                                      const EdgeId tmp_edge_id, bool &optimize_edge) {
+    if (GetDAG().ContainsNode(parent_subsplit) &&
+        GetDAG().ContainsNode(child_subsplit)) {
+      const auto parent_node_id = GetDAG().GetDAGNodeId(parent_subsplit);
+      const auto child_node_id = GetDAG().GetDAGNodeId(child_subsplit);
+      if (GetDAG().ContainsEdge(parent_node_id, child_node_id)) {
+        const auto edge_id = GetDAG().GetEdgeIdx(parent_node_id, child_node_id);
+        branch_handler_(tmp_edge_id) = branch_handler_(edge_id);
+        optimize_edge = false;
+        return;
+      }
+    }
+    const Bitset edge_pcsp = Bitset::PCSP(parent_subsplit, child_subsplit);
+    if (tmp_branch_lengths_.find(edge_pcsp) != tmp_branch_lengths_.end()) {
+      branch_handler_(tmp_edge_id) = tmp_branch_lengths_[edge_pcsp];
+      optimize_edge = false;
+      return;
+    }
+  };
+  FindBranchLengthIfExists(GetDAG().GetDAGNodeBitset(ref_node_ids.parent),
+                           post_nni.GetParent(), temp_edge_ids.parent,
+                           do_optimize_edge.parent);
+  FindBranchLengthIfExists(post_nni.GetParent(),
+                           GetDAG().GetDAGNodeBitset(ref_node_ids.sister),
+                           temp_edge_ids.sister, do_optimize_edge.sister);
+  FindBranchLengthIfExists(post_nni.GetParent(), post_nni.GetChild(),
+                           temp_edge_ids.focal, do_optimize_edge.focal);
+  FindBranchLengthIfExists(post_nni.GetChild(),
+                           GetDAG().GetDAGNodeBitset(ref_node_ids.left_child),
+                           temp_edge_ids.left_child, do_optimize_edge.left_child);
+  FindBranchLengthIfExists(post_nni.GetChild(),
+                           GetDAG().GetDAGNodeBitset(ref_node_ids.right_child),
+                           temp_edge_ids.right_child, do_optimize_edge.right_child);
 
   auto RootwardPass = [&]() {
     // Evolve up child P-PLVs.
@@ -819,6 +877,7 @@ ProposedNNIInfo TPEvalEngineViaLikelihood::GetProposedNNIInfo(
   nni_info.ref_edge_ids = ref_edge_ids;
   nni_info.ref_node_ids = ref_node_ids;
   nni_info.adj_edge_ids = adj_edge_ids;
+  nni_info.adj_pcsps = adj_pcsps;
   nni_info.do_optimize_edge = do_optimize_edge;
 
   return nni_info;
@@ -1155,7 +1214,7 @@ LocalPVIds TPEvalEngineViaLikelihood::GetLocalPVIdsOfEdge(const EdgeId edge_id) 
   if (!GetDAG().IsEdgeRoot(choices.parent)) {
     const auto &parent_choices =
         GetTPEngine().GetChoiceMap().GetEdgeChoice(choices.parent);
-    const auto focal = GetDAG().GetFocalClade(parent_choices.parent);
+    const auto focal = GetDAG().GetFocalClade(choices.parent);
     const auto sister = Bitset::Opposite(focal);
     pv_ids.grandparent_p_ = GetPVs().GetPVIndex(PLVType::P, parent_choices.parent);
     pv_ids.grandparent_phatfocal_ =
@@ -1169,6 +1228,7 @@ LocalPVIds TPEvalEngineViaLikelihood::GetLocalPVIdsOfEdge(const EdgeId edge_id) 
     pv_ids.grandparent_rsister_ =
         GetPVs().GetPVIndex(PLVTypeEnum::RPLVType(sister), parent_choices.parent);
   }
+
   // Parent PVIds
   pv_ids.parent_p_ = GetPVs().GetPVIndex(PLVType::P, choices.parent);
   pv_ids.parent_phatfocal_ = GetPVs().GetPVIndex(

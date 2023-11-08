@@ -67,6 +67,7 @@ struct ProposedNNIInfo {
   NNIAdjNodeIds ref_node_ids;
 
   NNIAdjEdgeIds adj_edge_ids;
+  NNIAdjPCSPs adj_pcsps;
 
   NNIAdjBools do_optimize_edge;
 };
