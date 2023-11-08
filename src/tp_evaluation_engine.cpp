@@ -333,6 +333,18 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
                      GetDAG().GetDAGEdge(rhs).GetChild();
             });
 
+  EdgeIdVector rootsplit_edges;
+  for (auto edge_id : GetDAG().GetRootsplitEdgeIds()) {
+    if (update_edges.find(edge_id) != update_edges.end()) {
+      rootsplit_edges.push_back(edge_id);
+    }
+  }
+  EdgeIdVector leaf_edges;
+  for (auto edge_id : GetDAG().GetLeafEdgeIds()) {
+    if (update_edges.find(edge_id) != update_edges.end()) {
+      leaf_edges.push_back(edge_id);
+    }
+  }
   os << "UpdateEngineAfterModifyingDAG::UpdateEdges: " << timer.Lap() << std::endl;
 
   // Populate Leaves with Site Patterns.
