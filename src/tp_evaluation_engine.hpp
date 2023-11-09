@@ -56,10 +56,14 @@ struct LocalPVIds {
 // modified) for computations. "temps" contain temporary data locations for performing
 // computations. "adjs" contains data actually adjacent to proposed NNI.
 struct ProposedNNIInfo {
+  NNIOperation post_nni;
+  NNIOperation pre_nni;
+
   LocalPVIds temp_pv_ids;
   NNIAdjEdgeIds temp_edge_ids;
 
   LocalPVIds ref_pv_ids;
+  NNIAdjacentMap<PVId> ref_primary_pv_ids;
   NNIAdjEdgeIds ref_edge_ids;
   NNIAdjNodeIds ref_node_ids;
 
@@ -199,11 +203,18 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
       const size_t spare_offset = 0,
       std::optional<BitsetEdgeIdMap> best_edge_map = std::nullopt) override;
 
-  //
+  // ** Scoring Helpers
+
+  // Get NNI info for proposed NNI not in DAG.
   ProposedNNIInfo GetProposedNNIInfo(
       const NNIOperation &post_nni, const NNIOperation &pre_nni,
       const size_t spare_offset = 0,
-      std::optional<BitsetEdgeIdMap> best_edge_map = std::nullopt);
+      std::optional<BitsetEdgeIdMap> best_edge_map = std::nullopt) const;
+  // Get NNI info for NNI in DAG.
+  ProposedNNIInfo GetRealNNIInfo(
+      const NNIOperation &post_nni, const NNIOperation &pre_nni,
+      const size_t spare_offset = 0,
+      std::optional<BitsetEdgeIdMap> best_edge_map = std::nullopt) const;
 
   // ** Resize
 
@@ -267,6 +278,15 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   void IncrementOptimizationCount() { branch_handler_.IncrementOptimizationCount(); }
   void ResetOptimizationCount() { branch_handler_.ResetOptimizationCount(); }
 
+  PLVEdgeHandler &GetPVs() { return likelihood_pvs_; }
+  const PLVEdgeHandler &GetPVs() const { return likelihood_pvs_; }
+  EigenMatrixXd &GetMatrix() { return log_likelihoods_; }
+  const EigenMatrixXd &GetMatrix() const { return log_likelihoods_; }
+  DAGBranchHandler &GetDAGBranchHandler() { return branch_handler_; }
+  const DAGBranchHandler &GetDAGBranchHandler() const { return branch_handler_; }
+
+  // ** Settings
+
   size_t IsOptimizeNewEdges() const { return do_optimize_new_edges_; }
   void SetOptimizeNewEdges(const bool do_optimize_new_edges) {
     do_optimize_new_edges_ = do_optimize_new_edges;
@@ -276,7 +296,6 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
     optimize_max_iter_ = optimize_max_iter;
   }
 
-  // Proposed NNI Settings
   bool IsInitProposedBranchLengthsWithDAG() const {
     return do_init_proposed_branch_lengths_with_dag_;
   }
@@ -293,13 +312,6 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
     do_fix_proposed_branch_lengths_from_dag_ = do_fix_proposed_branch_lengths_from_dag;
   }
 
-  PLVEdgeHandler &GetPVs() { return likelihood_pvs_; }
-  const PLVEdgeHandler &GetPVs() const { return likelihood_pvs_; }
-  EigenMatrixXd &GetMatrix() { return log_likelihoods_; }
-  const EigenMatrixXd &GetMatrix() const { return log_likelihoods_; }
-  DAGBranchHandler &GetDAGBranchHandler() { return branch_handler_; }
-  const DAGBranchHandler &GetDAGBranchHandler() const { return branch_handler_; }
-
   // ** PV Operations
 
   // Get primary PV Ids for corresponding parent/child pair.
@@ -313,7 +325,7 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   LocalPVIds GetLocalPVIdsOfEdge(const EdgeId edge_id) const;
   // Remaps secondary PV Ids according to the clade map.
   LocalPVIds RemapLocalPVIdsForPostNNI(
-      const LocalPVIds &pre_pvids, const NNIOperation::NNICladeArray &clade_map) const;
+      const LocalPVIds &pre_pv_ids, const NNIOperation::NNICladeArray &clade_map) const;
 
   // Get temporary PV Ids for intermediate proposed NNI computations.
   LocalPVIds GetTempLocalPVIdsForProposedNNIs(const size_t spare_offset) const;
@@ -437,7 +449,7 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   // Number of spare nodes needed to be allocated per proposed NNI.
   static constexpr size_t spare_nodes_per_nni_ = 12;
   // Number of spare edges needed to be allocated per proposed NNI.
-  static constexpr size_t spare_edges_per_nni_ = 6;
+  static constexpr size_t spare_edges_per_nni_ = 5;
 
   // ** Substitution Model
   // When we change from JC69Model, check that we are actually doing transpose in

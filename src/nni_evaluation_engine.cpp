@@ -1079,8 +1079,11 @@ void NNIEvalEngineViaTP::UpdateEngineAfterModifyingDAG(
 }
 
 void NNIEvalEngineViaTP::ScoreAdjacentNNIs(const NNISet &adjacent_nnis) {
-  const auto best_edge_map =
-      GetTPEngine().BuildMapOfProposedNNIPCSPsToBestPreNNIEdges(adjacent_nnis);
+  std::optional<BitsetEdgeIdMap> best_edge_map = std::nullopt;
+  if (GetTPEngine().GetUseBestEdgeMap()) {
+    best_edge_map =
+        GetTPEngine().BuildMapOfProposedNNIPCSPsToBestPreNNIEdges(adjacent_nnis);
+  }
   for (const auto &nni : adjacent_nnis) {
     const auto pre_nni = GetDAG().FindNNINeighborInDAG(nni);
     GetScoredNNIs()[nni] =

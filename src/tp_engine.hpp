@@ -130,10 +130,26 @@ class TPEngine {
   size_t GetSpareNodesPerNNI() const { return spare_nodes_per_nni_; }
   size_t GetSpareEdgesPerNNI() const { return spare_edges_per_nni_; }
 
-  double GetResizingFactor() const { return resizing_factor_; }
   size_t GetInputTreeCount() const { return input_tree_count_; }
   TreeId GetMaxTreeId() const { return TreeId(tree_counter_); }
   TreeId GetNextTreeId() const { return TreeId(GetInputTreeCount()); }
+
+  // ** Settings
+
+  double GetResizingFactor() const;
+
+  size_t IsOptimizeNewEdges() const;
+  void SetOptimizeNewEdges(const bool do_optimize_new_edges);
+  size_t GetOptimizationMaxIteration() const;
+  void SetOptimizationMaxIteration(const size_t optimize_max_iter);
+  bool GetUseBestEdgeMap() const;
+  void SetUseBestEdgeMap(bool do_use_best_edge_map);
+  bool IsInitProposedBranchLengthsWithDAG() const;
+  void SetInitProposedBranchLengthsWithDAG(
+      const bool do_init_proposed_branch_lengths_with_dag);
+  bool IsFixProposedBranchLengthsFromDAG() const;
+  void SetFixProposedBranchLengthsFromDAG(
+      const bool do_fix_proposed_branch_lengths_from_dag);
 
   // ** Maintenance
 
@@ -513,8 +529,8 @@ class TPEngine {
   GraftDAG *graft_dag_ = nullptr;
 
   // Map that tracks the optimal edge to reference for each individual edge.
-  BitsetEdgeIdMap best_edge_map_;
-  // Use best edge map.
+  // BitsetEdgeIdMap best_edge_map_;
+  // Use best edge map for scoring NNIs.
   bool do_use_best_edge_map_ = true;
 
   // A map showing which Evaluation Engines are "in use".  Several engines may be

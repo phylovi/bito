@@ -891,14 +891,21 @@ PYBIND11_MODULE(bito, m) {
       .def("get_branch_lengths", [](TPEngine &self) { self.GetBranchLengths(); })
       .def("optimize_branch_lengths", &TPEngine::OptimizeBranchLengths,
            py::arg("check_branch_convergence") = std::nullopt)
-      .def("set_optimization_max_iteration",
-           [](TPEngine &self, const size_t n) {
-             self.GetLikelihoodEvalEngine().SetOptimizationMaxIteration(n);
-           })
-      .def("get_optimization_max_iteration",
-           [](const TPEngine &self) {
-             return self.GetLikelihoodEvalEngine().GetOptimizationMaxIteration();
-           })
+      // ** Settings
+      .def("is_optimize_new_edges", &TPEngine::IsOptimizeNewEdges)
+      .def("set_optimize_new_edges", &TPEngine::SetOptimizeNewEdges)
+      .def("set_optimization_max_iteration", &TPEngine::SetOptimizationMaxIteration)
+      .def("get_optimization_max_iteration", &TPEngine::GetOptimizationMaxIteration)
+      .def("get_use_best_edge_map", &TPEngine::GetUseBestEdgeMap)
+      .def("set_use_best_edge_map", &TPEngine::SetUseBestEdgeMap)
+      .def("is_init_proposed_branch_lengths_with_dag",
+           &TPEngine::IsInitProposedBranchLengthsWithDAG)
+      .def("set_init_proposed_branch_lengths_with_dag",
+           &TPEngine::SetInitProposedBranchLengthsWithDAG)
+      .def("is_fix_proposed_branch_lengths_from_dag",
+           &TPEngine::IsFixProposedBranchLengthsFromDAG)
+      .def("set_fix_proposed_branch_lengths_from_dag",
+           &TPEngine::SetFixProposedBranchLengthsFromDAG)
       // ** I/O
       .def("build_map_from_pcsp_to_edge_choice_pcsps",
            &TPEngine::BuildMapFromPCSPToEdgeChoicePCSPs)

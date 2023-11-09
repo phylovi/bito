@@ -22,10 +22,15 @@ sort_taxa = False
 # rounding digits in printed output
 digits = 5
 # number of optimization iterations
-opt_max = 1
 # whether to rescore or reevaluate rejected nnis -- use None for default
 do_rescore_all_nnis = True
 do_reeval_all_nnis = None
+# nni evaluation settings
+optimization_max_iteration = 1
+do_optimize_new_edges = True
+do_use_best_edge_map = False
+do_init_proposed_bls_with_dag = True
+do_fix_proposed_bls_from_dag = True
 # terminate search when all credible edges found
 do_end_when_all_creds_found = True
 # print data
@@ -680,7 +685,12 @@ class NNISearchInstance:
         # nni_engine.set_top_n_score_filtering_scheme(1)
         nni_engine.set_top_k_score_filtering_scheme(1)
         # !CHANGE
-        self.dag_inst.get_tp_engine().set_optimization_max_iteration(self.args.opt_max)
+        tp_engine = self.dag_inst.get_tp_engine()
+        tp_engine.set_optimization_max_iteration(self.args.opt_max)
+        tp_engine.set_optimize_new_edges(do_optimize_new_edges)
+        tp_engine.set_use_best_edge_map(do_use_best_edge_map)
+        tp_engine.set_init_proposed_branch_lengths_with_dag(do_init_proposed_bls_with_dag)
+        tp_engine.set_fix_proposed_branch_lengths_from_dag(do_fix_proposed_bls_from_dag)
         if self.args.use_cutoff:
             nni_engine.set_tp_likelihood_cutoff_filtering_scheme(
                 args.threshold)
@@ -1088,7 +1098,7 @@ class Program:
         subparser1.add_argument('--opt-init', action='store_true',
                                 help='optimize branch lengths when initializing DAG')
         subparser1.add_argument('--opt-max', help='Maximum number of iterations of branch length optimization.',
-                                type=int, default=opt_max)
+                                type=int, default=optimization_max_iteration)
         # options
         subparser1.add_argument('-o', '--output', help='output file', type=str,
                                 default='results.nni_search.csv')

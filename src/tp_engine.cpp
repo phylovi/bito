@@ -171,6 +171,59 @@ bool operator==(const TPEngine &lhs, const TPEngine &rhs) {
   return TPEngine::Compare(lhs, rhs) == 0;
 }
 
+// ** Settings
+
+double TPEngine::GetResizingFactor() const { return resizing_factor_; }
+bool TPEngine::GetUseBestEdgeMap() const { return do_use_best_edge_map_; }
+void TPEngine::SetUseBestEdgeMap(bool do_use_best_edge_map) {
+  do_use_best_edge_map_ = do_use_best_edge_map;
+}
+
+size_t TPEngine::IsOptimizeNewEdges() const {
+  Assert(IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine),
+         "Must MakeLikelihoodEvalEngine modifying settings.");
+  return GetLikelihoodEvalEngine().IsOptimizeNewEdges();
+}
+void TPEngine::SetOptimizeNewEdges(const bool do_optimize_new_edges) {
+  Assert(IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine),
+         "Must MakeLikelihoodEvalEngine modifying settings.");
+  GetLikelihoodEvalEngine().SetOptimizeNewEdges(do_optimize_new_edges);
+}
+size_t TPEngine::GetOptimizationMaxIteration() const {
+  Assert(IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine),
+         "Must MakeLikelihoodEvalEngine modifying settings.");
+  return GetLikelihoodEvalEngine().GetOptimizationMaxIteration();
+}
+void TPEngine::SetOptimizationMaxIteration(const size_t optimize_max_iter) {
+  Assert(IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine),
+         "Must MakeLikelihoodEvalEngine modifying settings.");
+  GetLikelihoodEvalEngine().SetOptimizationMaxIteration(optimize_max_iter);
+}
+bool TPEngine::IsInitProposedBranchLengthsWithDAG() const {
+  Assert(IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine),
+         "Must MakeLikelihoodEvalEngine modifying settings.");
+  return GetLikelihoodEvalEngine().IsInitProposedBranchLengthsWithDAG();
+}
+void TPEngine::SetInitProposedBranchLengthsWithDAG(
+    const bool do_init_proposed_branch_lengths_with_dag) {
+  Assert(IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine),
+         "Must MakeLikelihoodEvalEngine modifying settings.");
+  GetLikelihoodEvalEngine().SetInitProposedBranchLengthsWithDAG(
+      do_init_proposed_branch_lengths_with_dag);
+}
+bool TPEngine::IsFixProposedBranchLengthsFromDAG() const {
+  Assert(IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine),
+         "Must MakeLikelihoodEvalEngine modifying settings.");
+  return GetLikelihoodEvalEngine().IsFixProposedBranchLengthsFromDAG();
+}
+void TPEngine::SetFixProposedBranchLengthsFromDAG(
+    const bool do_fix_proposed_branch_lengths_from_dag) {
+  Assert(IsEvalEngineInUse(TPEvalEngineType::LikelihoodEvalEngine),
+         "Must MakeLikelihoodEvalEngine modifying settings.");
+  GetLikelihoodEvalEngine().SetFixProposedBranchLengthsFromDAG(
+      do_fix_proposed_branch_lengths_from_dag);
+}
+
 // ** Maintenance
 
 void TPEngine::Initialize() {
