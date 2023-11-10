@@ -1789,6 +1789,7 @@ void CompareNodeIds(const ContainerType &lhs, const ContainerType &rhs,
 NodeIdVectorPair SubsplitDAG::FindParentNodeIds(const Bitset &subsplit) const {
   // TODO fix me!
   // auto [left_map, right_map] = FindParentNodeIdsViaMap(subsplit);
+  // return {left_map, right_map};
   auto [left_scan, right_scan] = FindParentNodeIdsViaScan(subsplit);
   return {left_scan, right_scan};
 }
@@ -1796,6 +1797,7 @@ NodeIdVectorPair SubsplitDAG::FindParentNodeIds(const Bitset &subsplit) const {
 NodeIdVectorPair SubsplitDAG::FindChildNodeIds(const Bitset &subsplit) const {
   // TODO fix me!
   // auto [left_map, right_map] = FindChildNodeIdsViaMap(subsplit);
+  // return {left_map, right_map};
   auto [left_scan, right_scan] = FindChildNodeIdsViaScan(subsplit);
   return {left_scan, right_scan};
 }

@@ -362,75 +362,77 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
 
   os << "UpdateEngineAfterModifyingDAG::Init: " << timer.Lap() << std::endl;
 
-  bool is_on_watchlist = watch_all;
-  for (auto &[edge_id, nni_info] : nni_infos) {
-    std::ignore = edge_id;
-    is_on_watchlist |= nni_watchlist.find(nni_info.adj_pcsps.focal.ToHashString(5)) !=
-                       nni_watchlist.end();
-  }
+  // bool is_on_watchlist = watch_all;
+  // for (auto &[edge_id, nni_info] : nni_infos) {
+  //   std::ignore = edge_id;
+  //   is_on_watchlist |= nni_watchlist.find(nni_info.adj_pcsps.focal.ToHashString(5))
+  //   !=
+  //                      nni_watchlist.end();
+  // }
 
-  // TODO Print Branch Lengths.
-  std::cout << "  === INIT_MODIFYING_DAG ===" << std::endl;
-  if (is_on_watchlist) {
-    for (auto &[edge_id, nni_info] : nni_infos) {
-      std::cout << nni_info.post_nni.ToHashString(5) << ": PCSPS [ ";
-      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-        std::cout << nni_info.adj_pcsps[adj_nni_type].ToHashString(5) << " ";
-      }
+  // // TODO Print Branch Lengths.
+  // std::cout << "  === INIT_MODIFYING_DAG ===" << std::endl;
+  // if (is_on_watchlist) {
+  //   for (auto &[edge_id, nni_info] : nni_infos) {
+  //     std::cout << nni_info.post_nni.ToHashString(5) << ": PCSPS [ ";
+  //     for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //       std::cout << nni_info.adj_pcsps[adj_nni_type].ToHashString(5) << " ";
+  //     }
 
-      std::cout << "]" << std::endl;
-      std::cout << nni_info.post_nni.ToHashString(5) << ": ADJ_CHOICES " << std::endl;
-      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-        auto edge_id = nni_info.adj_edge_ids[adj_nni_type];
-        if (edge_id == NoId) {
-          std::cout << "  [ ]" << std::endl;
-          continue;
-        }
-        auto pcsps = GetTPEngine().GetChoiceMap().GetEdgeChoicePCSPs(edge_id);
-        std::cout << "  [ ";
-        for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-          std::cout << pcsps[adj_nni_type].ToHashString(5) << " ";
-        }
-        std::cout << "]" << std::endl;
-      }
+  //     std::cout << "]" << std::endl;
+  //     std::cout << nni_info.post_nni.ToHashString(5) << ": ADJ_CHOICES " <<
+  //     std::endl; for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //       auto edge_id = nni_info.adj_edge_ids[adj_nni_type];
+  //       if (edge_id == NoId) {
+  //         std::cout << "  [ ]" << std::endl;
+  //         continue;
+  //       }
+  //       auto pcsps = GetTPEngine().GetChoiceMap().GetEdgeChoicePCSPs(edge_id);
+  //       std::cout << "  [ ";
+  //       for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //         std::cout << pcsps[adj_nni_type].ToHashString(5) << " ";
+  //       }
+  //       std::cout << "]" << std::endl;
+  //     }
 
-      std::cout << nni_info.post_nni.ToHashString(5) << ": REF_CHOICES " << std::endl;
-      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-        std::cout << NNIAdjacentEnum::ToString(adj_nni_type) << " ";
-        auto edge_id = nni_info.ref_edge_ids[adj_nni_type];
-        if (edge_id == NoId) {
-          std::cout << "  [ ]" << std::endl;
-          continue;
-        }
-        auto pcsps = GetTPEngine().GetChoiceMap().GetEdgeChoicePCSPs(edge_id);
-        std::cout << "  [ ";
-        for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-          std::cout << pcsps[adj_nni_type].ToHashString(5) << " ";
-        }
-        std::cout << "]" << std::endl;
-      }
+  //     std::cout << nni_info.post_nni.ToHashString(5) << ": REF_CHOICES " <<
+  //     std::endl; for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //       std::cout << NNIAdjacentEnum::ToString(adj_nni_type) << " ";
+  //       auto edge_id = nni_info.ref_edge_ids[adj_nni_type];
+  //       if (edge_id == NoId) {
+  //         std::cout << "  [ ]" << std::endl;
+  //         continue;
+  //       }
+  //       auto pcsps = GetTPEngine().GetChoiceMap().GetEdgeChoicePCSPs(edge_id);
+  //       std::cout << "  [ ";
+  //       for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //         std::cout << pcsps[adj_nni_type].ToHashString(5) << " ";
+  //       }
+  //       std::cout << "]" << std::endl;
+  //     }
 
-      std::cout << nni_info.post_nni.ToHashString(5) << ": OLD_EDGES [ ";
-      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-        std::cout << !nni_info.do_optimize_edge[adj_nni_type] << " ";
-      }
-      std::cout << "]" << std::endl;
-      std::cout << nni_info.post_nni.ToHashString(5) << ": PVS [ ";
-      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-        std::cout << GetPVs().ToHashString(nni_info.ref_primary_pv_ids[adj_nni_type], 5)
-                  << " ";
-      }
-      std::cout << "]" << std::endl;
-      std::cout << nni_info.post_nni.ToHashString(5) << ": BEFORE_BLS [ ";
-      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-        if (nni_info.adj_edge_ids[adj_nni_type] == NoId) continue;
-        std::cout << DblToScientific(
-                         branch_handler_(nni_info.adj_edge_ids[adj_nni_type]))
-                  << " ";
-      }
-      std::cout << "]" << std::endl;
-    }
-  }
+  //     std::cout << nni_info.post_nni.ToHashString(5) << ": OLD_EDGES [ ";
+  //     for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //       std::cout << !nni_info.do_optimize_edge[adj_nni_type] << " ";
+  //     }
+  //     std::cout << "]" << std::endl;
+  //     std::cout << nni_info.post_nni.ToHashString(5) << ": PVS [ ";
+  //     for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //       std::cout << GetPVs().ToHashString(nni_info.ref_primary_pv_ids[adj_nni_type],
+  //       5)
+  //                 << " ";
+  //     }
+  //     std::cout << "]" << std::endl;
+  //     std::cout << nni_info.post_nni.ToHashString(5) << ": BEFORE_BLS [ ";
+  //     for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //       if (nni_info.adj_edge_ids[adj_nni_type] == NoId) continue;
+  //       std::cout << DblToScientific(
+  //                        branch_handler_(nni_info.adj_edge_ids[adj_nni_type]))
+  //                 << " ";
+  //     }
+  //     std::cout << "]" << std::endl;
+  //   }
+  // }
 
   // Initialize new PLVs.
   auto RootwardPass = [&]() {
@@ -444,42 +446,45 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
     }
   };
 
-  // TODO can we remove this?
-  auto NNIRootwardPass = [&](const EdgeId edge_id) {
-    const auto &choice = GetTPEngine().GetChoiceMap(edge_id);
-    const auto pv_ids = GetLocalPVIdsOfEdge(edge_id);
-    // Evolve up child P-PLVs.
-    SetToEvolvedPV(pv_ids.child_phatleft_, choice.left_child, pv_ids.leftchild_p_);
-    SetToEvolvedPV(pv_ids.child_phatright_, choice.right_child, pv_ids.rightchild_p_);
-    MultiplyPVs(pv_ids.child_p_, pv_ids.child_phatleft_, pv_ids.child_phatright_);
-    // Evolve up parent P-PLVs
-    SetToEvolvedPV(pv_ids.parent_phatsister_, choice.sister, pv_ids.sister_p_);
-    SetToEvolvedPV(pv_ids.parent_phatfocal_, edge_id, pv_ids.child_p_);
-    MultiplyPVs(pv_ids.parent_p_, pv_ids.parent_phatfocal_, pv_ids.parent_phatsister_);
-  };
-  auto NNILeafwardPass = [&](const EdgeId edge_id) {
-    const auto &choice = GetTPEngine().GetChoiceMap(edge_id);
-    const auto pv_ids = GetLocalPVIdsOfEdge(edge_id);
-    // If the parent is not the DAG root, then evolve grandparent down to parent.
-    if (pv_ids.grandparent_rfocal_ != NoId) {
-      SetToEvolvedPV(pv_ids.parent_rhat_, choice.parent, pv_ids.grandparent_rfocal_);
-    }
-    // Evolve down parent R-PLVs.
-    MultiplyPVs(pv_ids.parent_rfocal_, pv_ids.parent_rhat_, pv_ids.parent_phatsister_);
-    MultiplyPVs(pv_ids.parent_rsister_, pv_ids.parent_rhat_, pv_ids.parent_phatfocal_);
-    SetToEvolvedPV(pv_ids.child_rhat_, edge_id, pv_ids.parent_rfocal_);
-    // Update results.
-    MultiplyPVs(pv_ids.child_rleft_, pv_ids.child_rhat_, pv_ids.child_phatright_);
-    MultiplyPVs(pv_ids.child_rright_, pv_ids.child_rhat_, pv_ids.child_phatleft_);
-  };
-  auto NNIUpdatePVs = [&]() {
-    // Update new NNI PVs.
-    for (const auto edge_id : nni_edges) {
-      NNIRootwardPass(edge_id);
-      NNILeafwardPass(edge_id);
-    }
-  };
-  std::ignore = NNIUpdatePVs;
+  // // TODO can we remove this?
+  // auto NNIRootwardPass = [&](const EdgeId edge_id) {
+  //   const auto &choice = GetTPEngine().GetChoiceMap(edge_id);
+  //   const auto pv_ids = GetLocalPVIdsOfEdge(edge_id);
+  //   // Evolve up child P-PLVs.
+  //   SetToEvolvedPV(pv_ids.child_phatleft_, choice.left_child, pv_ids.leftchild_p_);
+  //   SetToEvolvedPV(pv_ids.child_phatright_, choice.right_child,
+  //   pv_ids.rightchild_p_); MultiplyPVs(pv_ids.child_p_, pv_ids.child_phatleft_,
+  //   pv_ids.child_phatright_);
+  //   // Evolve up parent P-PLVs
+  //   SetToEvolvedPV(pv_ids.parent_phatsister_, choice.sister, pv_ids.sister_p_);
+  //   SetToEvolvedPV(pv_ids.parent_phatfocal_, edge_id, pv_ids.child_p_);
+  //   MultiplyPVs(pv_ids.parent_p_, pv_ids.parent_phatfocal_,
+  //   pv_ids.parent_phatsister_);
+  // };
+  // auto NNILeafwardPass = [&](const EdgeId edge_id) {
+  //   const auto &choice = GetTPEngine().GetChoiceMap(edge_id);
+  //   const auto pv_ids = GetLocalPVIdsOfEdge(edge_id);
+  //   // If the parent is not the DAG root, then evolve grandparent down to parent.
+  //   if (pv_ids.grandparent_rfocal_ != NoId) {
+  //     SetToEvolvedPV(pv_ids.parent_rhat_, choice.parent, pv_ids.grandparent_rfocal_);
+  //   }
+  //   // Evolve down parent R-PLVs.
+  //   MultiplyPVs(pv_ids.parent_rfocal_, pv_ids.parent_rhat_,
+  //   pv_ids.parent_phatsister_); MultiplyPVs(pv_ids.parent_rsister_,
+  //   pv_ids.parent_rhat_, pv_ids.parent_phatfocal_);
+  //   SetToEvolvedPV(pv_ids.child_rhat_, edge_id, pv_ids.parent_rfocal_);
+  //   // Update results.
+  //   MultiplyPVs(pv_ids.child_rleft_, pv_ids.child_rhat_, pv_ids.child_phatright_);
+  //   MultiplyPVs(pv_ids.child_rright_, pv_ids.child_rhat_, pv_ids.child_phatleft_);
+  // };
+  // auto NNIUpdatePVs = [&]() {
+  //   // Update new NNI PVs.
+  //   for (const auto edge_id : nni_edges) {
+  //     NNIRootwardPass(edge_id);
+  //     NNILeafwardPass(edge_id);
+  //   }
+  // };
+  // std::ignore = NNIUpdatePVs;
 
   auto OptimizeEdge = [&](const NNIAdjacent nni_adj_type, const EdgeId edge_id,
                           const EdgeId parent_edge_id, const EdgeId focal_edge_id,
@@ -509,12 +514,12 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
     // Optimize branch length.
     if (do_optimize) {
       const auto &[parent_rfocal, child_p] = GetPrimaryPVIdsOfEdge(edge_id);
-      if (is_on_watchlist) {
-        std::cout << "DAG::optimize_edge::"
-                  << GetDAG().GetDAGEdgeBitset(edge_id).ToHashString(5) << " "
-                  << GetPVs().ToHashString(parent_rfocal, 5) << " "
-                  << GetPVs().ToHashString(child_p, 5) << std::endl;
-      }
+      // if (is_on_watchlist) {
+      //   std::cout << "DAG::optimize_edge::"
+      //             << GetDAG().GetDAGEdgeBitset(edge_id).ToHashString(5) << " "
+      //             << GetPVs().ToHashString(parent_rfocal, 5) << " "
+      //             << GetPVs().ToHashString(child_p, 5) << std::endl;
+      // }
       branch_handler_.OptimizeBranchLength(edge_id, parent_rfocal, child_p, false);
     }
     if (is_not_parent_edge) {
@@ -531,36 +536,37 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
   RootwardPass();
   LeafwardPass();
 
-  // TODO Print Branch Lengths.
-  std::cout << "  === BEFORE_MODIFYING_DAG ===" << std::endl;
-  if (is_on_watchlist) {
-    for (auto &[edge_id, nni_info] : nni_infos) {
-      std::cout << nni_info.post_nni.ToHashString(5) << ": PCSPS [ ";
-      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-        std::cout << nni_info.adj_pcsps[adj_nni_type].ToHashString(5) << " ";
-      }
-      std::cout << "]" << std::endl;
-      std::cout << nni_info.post_nni.ToHashString(5) << ": OLD_EDGES [ ";
-      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-        std::cout << !nni_info.do_optimize_edge[adj_nni_type] << " ";
-      }
-      std::cout << "]" << std::endl;
-      std::cout << nni_info.post_nni.ToHashString(5) << ": PVS [ ";
-      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-        std::cout << GetPVs().ToHashString(nni_info.ref_primary_pv_ids[adj_nni_type], 5)
-                  << " ";
-      }
-      std::cout << "]" << std::endl;
-      std::cout << nni_info.post_nni.ToHashString(5) << ": BEFORE_BLS [ ";
-      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-        if (nni_info.adj_edge_ids[adj_nni_type] == NoId) continue;
-        std::cout << DblToScientific(
-                         branch_handler_(nni_info.adj_edge_ids[adj_nni_type]))
-                  << " ";
-      }
-      std::cout << "]" << std::endl;
-    }
-  }
+  // // TODO Print Branch Lengths.
+  // std::cout << "  === BEFORE_MODIFYING_DAG ===" << std::endl;
+  // if (is_on_watchlist) {
+  //   for (auto &[edge_id, nni_info] : nni_infos) {
+  //     std::cout << nni_info.post_nni.ToHashString(5) << ": PCSPS [ ";
+  //     for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //       std::cout << nni_info.adj_pcsps[adj_nni_type].ToHashString(5) << " ";
+  //     }
+  //     std::cout << "]" << std::endl;
+  //     std::cout << nni_info.post_nni.ToHashString(5) << ": OLD_EDGES [ ";
+  //     for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //       std::cout << !nni_info.do_optimize_edge[adj_nni_type] << " ";
+  //     }
+  //     std::cout << "]" << std::endl;
+  //     std::cout << nni_info.post_nni.ToHashString(5) << ": PVS [ ";
+  //     for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //       std::cout << GetPVs().ToHashString(nni_info.ref_primary_pv_ids[adj_nni_type],
+  //       5)
+  //                 << " ";
+  //     }
+  //     std::cout << "]" << std::endl;
+  //     std::cout << nni_info.post_nni.ToHashString(5) << ": BEFORE_BLS [ ";
+  //     for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //       if (nni_info.adj_edge_ids[adj_nni_type] == NoId) continue;
+  //       std::cout << DblToScientific(
+  //                        branch_handler_(nni_info.adj_edge_ids[adj_nni_type]))
+  //                 << " ";
+  //     }
+  //     std::cout << "]" << std::endl;
+  //   }
+  // }
 
   os << "UpdateEngineAfterModifyingDAG::Leafward/RootwardPass: " << timer.Lap()
      << std::endl;
@@ -591,31 +597,31 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
         os << "UpdateEngineAfterModifyingDAG::OptimizeCentralEdges: "
            << optimization_timer.Lap() << std::endl;
 
-        std::cout << "  === MID_MODIFYING_DAG ===" << std::endl;
-        if (is_on_watchlist) {
-          for (auto &[edge_id, nni_info] : nni_infos) {
-            std::cout << nni_info.post_nni.ToHashString(5) << ": PCSPS [ ";
-            for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-              std::cout << nni_info.adj_pcsps[adj_nni_type].ToHashString(5) << " ";
-            }
-            std::cout << "]" << std::endl;
-            std::cout << nni_info.post_nni.ToHashString(5) << ": PVS [ ";
-            for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-              std::cout << GetPVs().ToHashString(
-                               nni_info.ref_primary_pv_ids[adj_nni_type], 5)
-                        << " ";
-            }
-            std::cout << "]" << std::endl;
-            std::cout << nni_info.post_nni.ToHashString(5) << ": MID_BLS [ ";
-            for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-              if (nni_info.adj_edge_ids[adj_nni_type] == NoId) continue;
-              std::cout << DblToScientific(
-                               branch_handler_(nni_info.adj_edge_ids[adj_nni_type]))
-                        << " ";
-            }
-            std::cout << "]" << std::endl;
-          }
-        }
+        // std::cout << "  === MID_MODIFYING_DAG ===" << std::endl;
+        // if (is_on_watchlist) {
+        //   for (auto &[edge_id, nni_info] : nni_infos) {
+        //     std::cout << nni_info.post_nni.ToHashString(5) << ": PCSPS [ ";
+        //     for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+        //       std::cout << nni_info.adj_pcsps[adj_nni_type].ToHashString(5) << " ";
+        //     }
+        //     std::cout << "]" << std::endl;
+        //     std::cout << nni_info.post_nni.ToHashString(5) << ": PVS [ ";
+        //     for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+        //       std::cout << GetPVs().ToHashString(
+        //                        nni_info.ref_primary_pv_ids[adj_nni_type], 5)
+        //                 << " ";
+        //     }
+        //     std::cout << "]" << std::endl;
+        //     std::cout << nni_info.post_nni.ToHashString(5) << ": MID_BLS [ ";
+        //     for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+        //       if (nni_info.adj_edge_ids[adj_nni_type] == NoId) continue;
+        //       std::cout << DblToScientific(
+        //                        branch_handler_(nni_info.adj_edge_ids[adj_nni_type]))
+        //                 << " ";
+        //     }
+        //     std::cout << "]" << std::endl;
+        //   }
+        // }
       }
       // Optimize incidental new edges.
       for (const auto edge_id : extra_edges) {
@@ -644,30 +650,31 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
   ComputeScores();
   os << "UpdateEngineAfterModifyingDAG::ComputeScores: " << timer.Lap() << std::endl;
 
-  std::cout << "  === AFTER_MODIFYING_DAG ===" << std::endl;
-  if (is_on_watchlist) {
-    for (auto &[edge_id, nni_info] : nni_infos) {
-      std::cout << nni_info.post_nni.ToHashString(5) << ": PCSPS [ ";
-      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-        std::cout << nni_info.adj_pcsps[adj_nni_type].ToHashString(5) << " ";
-      }
-      std::cout << "]" << std::endl;
-      std::cout << nni_info.post_nni.ToHashString(5) << ": PVS [ ";
-      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-        std::cout << GetPVs().ToHashString(nni_info.ref_primary_pv_ids[adj_nni_type], 5)
-                  << " ";
-      }
-      std::cout << "]" << std::endl;
-      std::cout << nni_info.post_nni.ToHashString(5) << ": AFTER_BLS [ ";
-      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-        if (nni_info.adj_edge_ids[adj_nni_type] == NoId) continue;
-        std::cout << DblToScientific(
-                         branch_handler_(nni_info.adj_edge_ids[adj_nni_type]))
-                  << " ";
-      }
-      std::cout << "]" << std::endl;
-    }
-  }
+  // std::cout << "  === AFTER_MODIFYING_DAG ===" << std::endl;
+  // if (is_on_watchlist) {
+  //   for (auto &[edge_id, nni_info] : nni_infos) {
+  //     std::cout << nni_info.post_nni.ToHashString(5) << ": PCSPS [ ";
+  //     for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //       std::cout << nni_info.adj_pcsps[adj_nni_type].ToHashString(5) << " ";
+  //     }
+  //     std::cout << "]" << std::endl;
+  //     std::cout << nni_info.post_nni.ToHashString(5) << ": PVS [ ";
+  //     for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //       std::cout << GetPVs().ToHashString(nni_info.ref_primary_pv_ids[adj_nni_type],
+  //       5)
+  //                 << " ";
+  //     }
+  //     std::cout << "]" << std::endl;
+  //     std::cout << nni_info.post_nni.ToHashString(5) << ": AFTER_BLS [ ";
+  //     for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //       if (nni_info.adj_edge_ids[adj_nni_type] == NoId) continue;
+  //       std::cout << DblToScientific(
+  //                        branch_handler_(nni_info.adj_edge_ids[adj_nni_type]))
+  //                 << " ";
+  //     }
+  //     std::cout << "]" << std::endl;
+  //   }
+  // }
 }
 
 double TPEvalEngineViaLikelihood::GetTopTreeScoreWithEdge(const EdgeId edge_id) const {
@@ -685,7 +692,7 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
   const auto &ref_edge_ids = nni_info.ref_edge_ids;
   // const auto &ref_node_ids = nni_info.ref_node_ids;
   const auto &adj_edge_ids = nni_info.adj_edge_ids;
-  const auto &adj_pcsps = nni_info.adj_pcsps;
+  // const auto &adj_pcsps = nni_info.adj_pcsps;
   auto &do_optimize_edge = nni_info.do_optimize_edge;
 
   // Initialize branch lengths.
@@ -709,64 +716,66 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
     }
   }
 
-  // TODO Print Branch Lengths.
-  bool is_on_watchlist = watch_all;
-  is_on_watchlist |= nni_watchlist.find(nni_info.adj_pcsps.focal.ToHashString(5)) !=
-                     nni_watchlist.end();
-  if (is_on_watchlist) {
-    std::cout << post_nni.ToHashString(5) << ": PCSPS [ ";
-    for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-      std::cout << adj_pcsps[adj_nni_type].ToHashString(5) << " ";
-    }
-    std::cout << "]" << std::endl;
+  // // TODO Print Branch Lengths.
+  // bool is_on_watchlist = watch_all;
+  // is_on_watchlist |= nni_watchlist.find(nni_info.adj_pcsps.focal.ToHashString(5)) !=
+  //                    nni_watchlist.end();
+  // if (is_on_watchlist) {
+  //   std::cout << post_nni.ToHashString(5) << ": PCSPS [ ";
+  //   for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //     std::cout << adj_pcsps[adj_nni_type].ToHashString(5) << " ";
+  //   }
+  //   std::cout << "]" << std::endl;
 
-    std::cout << nni_info.post_nni.ToHashString(5) << ": ADJ_CHOICES " << std::endl;
-    for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-      auto edge_id = nni_info.adj_edge_ids[adj_nni_type];
-      if (edge_id == NoId) {
-        std::cout << "  [ ]" << std::endl;
-        continue;
-      }
-      auto pcsps = GetTPEngine().GetChoiceMap().GetEdgeChoicePCSPs(edge_id);
-      std::cout << "  [ ";
-      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-        std::cout << pcsps[adj_nni_type].ToHashString(5) << " ";
-      }
-      std::cout << "]" << std::endl;
-    }
+  //   std::cout << nni_info.post_nni.ToHashString(5) << ": ADJ_CHOICES " << std::endl;
+  //   for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //     auto edge_id = nni_info.adj_edge_ids[adj_nni_type];
+  //     if (edge_id == NoId) {
+  //       std::cout << "  [ ]" << std::endl;
+  //       continue;
+  //     }
+  //     auto pcsps = GetTPEngine().GetChoiceMap().GetEdgeChoicePCSPs(edge_id);
+  //     std::cout << "  [ ";
+  //     for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //       std::cout << pcsps[adj_nni_type].ToHashString(5) << " ";
+  //     }
+  //     std::cout << "]" << std::endl;
+  //   }
 
-    std::cout << nni_info.post_nni.ToHashString(5) << ": REF_CHOICES " << std::endl;
-    for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-      auto edge_id = nni_info.ref_edge_ids[adj_nni_type];
-      if (edge_id == NoId) {
-        std::cout << "  [ ]" << std::endl;
-        continue;
-      }
-      auto pcsps = GetTPEngine().GetChoiceMap().GetEdgeChoicePCSPs(edge_id);
-      std::cout << "  [ ";
-      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-        std::cout << pcsps[adj_nni_type].ToHashString(5) << " ";
-      }
-      std::cout << "]" << std::endl;
-    }
+  //   std::cout << nni_info.post_nni.ToHashString(5) << ": REF_CHOICES " << std::endl;
+  //   for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //     auto edge_id = nni_info.ref_edge_ids[adj_nni_type];
+  //     if (edge_id == NoId) {
+  //       std::cout << "  [ ]" << std::endl;
+  //       continue;
+  //     }
+  //     auto pcsps = GetTPEngine().GetChoiceMap().GetEdgeChoicePCSPs(edge_id);
+  //     std::cout << "  [ ";
+  //     for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //       std::cout << pcsps[adj_nni_type].ToHashString(5) << " ";
+  //     }
+  //     std::cout << "]" << std::endl;
+  //   }
 
-    std::cout << nni_info.post_nni.ToHashString(5) << ": OLD_EDGES [ ";
-    for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-      std::cout << (nni_info.adj_edge_ids[adj_nni_type] != NoId) << " ";
-    }
-    std::cout << "]" << std::endl;
-    std::cout << nni_info.post_nni.ToHashString(5) << ": PVS [ ";
-    for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-      std::cout << GetPVs().ToHashString(nni_info.ref_primary_pv_ids[adj_nni_type], 5)
-                << " ";
-    }
-    std::cout << "]" << std::endl;
-    std::cout << post_nni.ToHashString(5) << ": BEFORE_BLS [ ";
-    for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-      std::cout << DblToScientific(branch_handler_(temp_edge_ids[adj_nni_type])) << " ";
-    }
-    std::cout << "]" << std::endl;
-  }
+  //   std::cout << nni_info.post_nni.ToHashString(5) << ": OLD_EDGES [ ";
+  //   for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //     std::cout << (nni_info.adj_edge_ids[adj_nni_type] != NoId) << " ";
+  //   }
+  //   std::cout << "]" << std::endl;
+  //   std::cout << nni_info.post_nni.ToHashString(5) << ": PVS [ ";
+  //   for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //     std::cout << GetPVs().ToHashString(nni_info.ref_primary_pv_ids[adj_nni_type],
+  //     5)
+  //               << " ";
+  //   }
+  //   std::cout << "]" << std::endl;
+  //   std::cout << post_nni.ToHashString(5) << ": BEFORE_BLS [ ";
+  //   for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //     std::cout << DblToScientific(branch_handler_(temp_edge_ids[adj_nni_type])) << "
+  //     ";
+  //   }
+  //   std::cout << "]" << std::endl;
+  // }
 
   auto RootwardPass = [&]() {
     // Evolve up child P-PLVs.
@@ -828,12 +837,12 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
     }
     if (update_branch_length) {
       // Optimize branch length.
-      if (is_on_watchlist) {
-        std::cout << "PROP::optimize_edge::"
-                  << nni_info.adj_pcsps[nni_adj_type].ToHashString(5) << " "
-                  << GetPVs().ToHashString(parent_rfocal, 5) << " "
-                  << GetPVs().ToHashString(child_p, 5) << std::endl;
-      }
+      // if (is_on_watchlist) {
+      //   std::cout << "PROP::optimize_edge::"
+      //             << nni_info.adj_pcsps[nni_adj_type].ToHashString(5) << " "
+      //             << GetPVs().ToHashString(parent_rfocal, 5) << " "
+      //             << GetPVs().ToHashString(child_p, 5) << std::endl;
+      // }
       branch_handler_.OptimizeBranchLength(edge_id, parent_rfocal, child_p, iter > 0);
     }
     if (is_not_parent_edge) {
@@ -903,22 +912,23 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
         }
       }
 
-      // TODO Print NNI Info
-      if (is_on_watchlist) {
-        std::cout << nni_info.post_nni.ToHashString(5) << ": MID_PVS [ ";
-        for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-          std::cout << GetPVs().ToHashString(nni_info.ref_primary_pv_ids[adj_nni_type],
-                                             5)
-                    << " ";
-        }
-        std::cout << "]" << std::endl;
-        std::cout << post_nni.ToHashString(5) << ": MID_BLS [ ";
-        for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-          std::cout << DblToScientific(branch_handler_(temp_edge_ids[adj_nni_type]))
-                    << " ";
-        }
-        std::cout << "]" << std::endl;
-      }
+      // // TODO Print NNI Info
+      // if (is_on_watchlist) {
+      //   std::cout << nni_info.post_nni.ToHashString(5) << ": MID_PVS [ ";
+      //   for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+      //     std::cout <<
+      //     GetPVs().ToHashString(nni_info.ref_primary_pv_ids[adj_nni_type],
+      //                                        5)
+      //               << " ";
+      //   }
+      //   std::cout << "]" << std::endl;
+      //   std::cout << post_nni.ToHashString(5) << ": MID_BLS [ ";
+      //   for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+      //     std::cout << DblToScientific(branch_handler_(temp_edge_ids[adj_nni_type]))
+      //               << " ";
+      //   }
+      //   std::cout << "]" << std::endl;
+      // }
 
       // Update PLVs.
       RootwardPass();
@@ -926,19 +936,21 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
     }
   }
 
-  // TODO Print NNI Info
-  if (is_on_watchlist) {
-    std::cout << nni_info.post_nni.ToHashString(5) << ": AFTER_PVS [ ";
-    for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-      std::cout << GetPVs().ToHashString(nni_info.ref_primary_pv_ids[adj_nni_type], 5)
-                << " ";
-    }
-    std::cout << post_nni.ToHashString(5) << ": AFTER_BLS [ ";
-    for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
-      std::cout << DblToScientific(branch_handler_(temp_edge_ids[adj_nni_type])) << " ";
-    }
-    std::cout << "]" << std::endl;
-  }
+  // // TODO Print NNI Info
+  // if (is_on_watchlist) {
+  //   std::cout << nni_info.post_nni.ToHashString(5) << ": AFTER_PVS [ ";
+  //   for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //     std::cout << GetPVs().ToHashString(nni_info.ref_primary_pv_ids[adj_nni_type],
+  //     5)
+  //               << " ";
+  //   }
+  //   std::cout << post_nni.ToHashString(5) << ": AFTER_BLS [ ";
+  //   for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+  //     std::cout << DblToScientific(branch_handler_(temp_edge_ids[adj_nni_type])) << "
+  //     ";
+  //   }
+  //   std::cout << "]" << std::endl;
+  // }
 
   // Compute likelihood of focal edge by evolving up from child to parent.
   ComputeLikelihood(temp_edge_ids.focal, temp_pv_ids.child_p_,

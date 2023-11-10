@@ -14,7 +14,7 @@ import time
 import pprint
 import bito
 
-
+### Manual Settings (some can be overridden by commandline arguments)
 verbose = 1
 # abbreviate hash length for readability (None to not truncate)
 abbr = 5
@@ -22,13 +22,13 @@ sort_taxa = False
 # rounding digits in printed output
 digits = 5
 # number of optimization iterations
-# whether to rescore or reevaluate rejected nnis -- use None for default
-do_rescore_all_nnis = True
+# whether to rescore or reevaluate rejected nnis (use None for default behavior)
+do_rescore_all_nnis = None
 do_reeval_all_nnis = None
 # nni evaluation settings
-optimization_max_iteration = 1
+optimization_max_iteration = 5
 do_optimize_new_edges = True
-do_use_best_edge_map = False
+do_use_best_edge_map = True
 do_init_proposed_bls_with_dag = True
 do_fix_proposed_bls_from_dag = True
 # terminate search when all credible edges found
@@ -42,7 +42,7 @@ do_print_scored_nnis = False
 do_print_accepted_nnis = True
 do_print_summary = True
 # diagnostics: track changes to the DAG
-do_run_tracker = True
+do_run_tracker = False
 do_print_tracker_summary = True
 do_check_for_dag_changes = True
 do_check_for_nni_score_changes = True
@@ -59,7 +59,8 @@ pcsp_watchlist = {'[0x332a6||0x2b739]', '[0x16178||0xe250d]',
 subsplit_watchlist = {'0x11f2c', '0x44af5'}
 
 
-def print_v(*args, v=1):
+def print_v(*args, v=verbose):
+    ''' Optionally prints based on verbosity argument '''
     if verbose >= v:
         print(*args)
 
@@ -113,11 +114,11 @@ class Timer:
             for time, total in zip(self.times[key], self.times["full_iter"]):
                 times_perc[key].append(round(time / total, digits))
 
-        print_v("=== TIMES_REAL ===")
+        print_v("\n  == TIMES_REAL ==")
         for key in self.times:
             bin_len = min(len(self.times[key]), 10)
             print_v(
-                f'{key}:\n    {Utils.average_over_ranges(self.times[key], bin_len)}')
+                f'  {key}:\n    {Utils.average_over_ranges(self.times[key], bin_len)}')
             x_s = range(len(self.times[key]))
             fit = np.polyfit(y=self.times[key], x=x_s, deg=2)
             print_v(
@@ -125,11 +126,11 @@ class Timer:
             print_v(
                 f'    #POLYFIT: {round(fit[0]/abs(fit[2]), digits)}x^2 + {round(fit[1]/abs(fit[2]), digits)}x + {round(fit[2]/fit[2], digits)}')
 
-        print_v("\n=== TIMES_PERC ===")
+        print_v("\n  == TIMES_PERC ==")
         for key in times_perc:
             bin_len = min(len(self.times[key]), 10)
             print_v(
-                f'{key}:\n    {Utils.average_over_ranges(times_perc[key], bin_len)}')
+                f'  {key}:\n    {Utils.average_over_ranges(times_perc[key], bin_len)}')
             x_s = range(len(times_perc[key]))
             fit = np.polyfit(y=times_perc[key], x=x_s, deg=2)
             print_v(
@@ -309,10 +310,7 @@ class Loader:
 
     @staticmethod
     def build_pcsp_pp_map(dag, tree_id_map, tree_pp_map):
-        # !CHANGE
         dag_pcsps = dag.build_set_of_edge_bitsets()
-        # dag_pcsps = dag.build_vector_of_edge_bitsets()
-        # dag_pcsps = dag.build_sorted_vector_of_edge_bitsets()
         pcsp_pp_map = {}
         for pcsp_count, pcsp in enumerate(dag_pcsps):
             print_v(f"# loading pcsp {pcsp_count} of {len(dag_pcsps)}...")
@@ -320,10 +318,7 @@ class Loader:
         for tree_id in tree_pp_map:
             tree = tree_id_map[tree_id]
             pp = tree_pp_map[tree_id]
-            # !CHANGE
             tree_pcsps = tree.build_set_of_pcsps()
-            # tree_pcsps = tree.build_vector_of_pcsps()
-            # tree_pcsps = tree.build_sorted_vector_of_pcsps()
             tree_pcsps = tree.build_set_of_pcsps()
             for pcsp in tree_pcsps:
                 pcsp_pp_map[pcsp] += pp
@@ -392,16 +387,12 @@ class Results:
         pass
 
     def predata_mid_iter(self, iter_count, dag, nni_engine, pp_maps):
-        # !CHANGE
         new_adj_nni_count = len(
             nni_engine.adjacent_nnis()) - self.pre_data_['prev_adj_nni_count']
-        # new_adj_nni_count = len(nni_engine.new_adjacent_nnis())
         self.pre_data_['new_adj_nni_count'] = new_adj_nni_count
         prev_adj_nni_count = len(nni_engine.adjacent_nnis())
         self.pre_data_['prev_adj_nni_count'] = prev_adj_nni_count
-        # !CHANGE
         llhs_computed = self.pre_data_['llhs_computed']
-        # llhs_computed += len(nni_engine.nnis_to_rescore())
         llhs_computed += new_adj_nni_count
         self.pre_data_['llhs_computed'] = llhs_computed
         pass
@@ -431,8 +422,6 @@ class Results:
         pcsp_pp_rank = pp_maps.get_pcsp_pp_rank(
             nni, nni_engine.adjacent_nnis())
         self.pre_data_['pcsp_pp_rank'] = pcsp_pp_rank
-        # !CHANGE
-        # is_nni_new = nni in nni_engine.new_adjacent_nnis()
         is_nni_new = False
         self.pre_data_['is_nni_new'] = is_nni_new
         pass
@@ -584,10 +573,7 @@ class PosteriorProbabilityMaps:
     def get_credible_edge_count(self, dag):
         cred_edge_count = 0
         noncred_edge_count = 0
-        # !CHANGE
         pcsps = dag.build_set_of_edge_bitsets()
-        # pcsps = dag.build_vector_of_edge_bitsets()
-        # pcsps = dag.build_sorted_vector_of_edge_bitsets()
         for pcsp in pcsps:
             if pcsp in self.pcsp_pp_map:
                 cred_edge_count += 1
@@ -647,13 +633,10 @@ class NNISearchInstance:
         nni_engine = self.dag_inst.get_nni_engine()
         nni_engine.set_include_rootsplits(args.include_rootsplits)
         nni_engine.set_gp_likelihood_cutoff_filtering_scheme(0.0)
-        # !CHANGE
         if (do_rescore_all_nnis != None):
             nni_engine.set_rescore_rejected_nnis(do_rescore_all_nnis)
         if (do_reeval_all_nnis != None):
             nni_engine.set_reevaluate_rejected_nnis(do_reeval_all_nnis)
-        # !CHANGE
-        # nni_engine.set_top_n_score_filtering_scheme(1)
         nni_engine.set_top_k_score_filtering_scheme(1)
         if self.args.use_cutoff:
             nni_engine.set_gp_likelihood_cutoff_filtering_scheme(
@@ -662,8 +645,6 @@ class NNISearchInstance:
             nni_engine.set_gp_likelihood_drop_filtering_scheme(
                 self.args.threshold)
         if self.args.use_top_k:
-            # !CHANGE
-            # nni_engine.set_top_n_score_filtering_scheme(args.top_k)
             nni_engine.set_top_k_score_filtering_scheme(self.args.top_k)
         self.dag_inst.estimate_branch_lengths(1e-5, 3, True)
         pass
@@ -676,15 +657,11 @@ class NNISearchInstance:
         nni_engine = self.dag_inst.get_nni_engine()
         nni_engine.set_include_rootsplits(self.args.include_rootsplits)
         nni_engine.set_tp_likelihood_cutoff_filtering_scheme(0.0)
-        # !CHANGE
         if (do_rescore_all_nnis != None):
             nni_engine.set_rescore_rejected_nnis(do_rescore_all_nnis)
         if (do_reeval_all_nnis != None):
             nni_engine.set_reevaluate_rejected_nnis(do_reeval_all_nnis)
-        # !CHANGE
-        # nni_engine.set_top_n_score_filtering_scheme(1)
         nni_engine.set_top_k_score_filtering_scheme(1)
-        # !CHANGE
         tp_engine = self.dag_inst.get_tp_engine()
         tp_engine.set_optimization_max_iteration(self.args.opt_max)
         tp_engine.set_optimize_new_edges(do_optimize_new_edges)
@@ -698,8 +675,6 @@ class NNISearchInstance:
             nni_engine.set_tp_likelihood_drop_filtering_scheme(
                 self.args.threshold)
         if self.args.use_top_k:
-            # !CHANGE
-            # nni_engine.set_top_n_score_filtering_scheme(args.top_k)
             nni_engine.set_top_k_score_filtering_scheme(self.args.top_k)
         pass
 
@@ -856,8 +831,6 @@ class Tracker:
         for nni in new_proposed_scores:
             pcsp = nni.get_central_edge_pcsp()
             self.old_proposed_scores[pcsp] = new_proposed_scores[nni]
-        # print(
-        #     f"#PROPOSED_SCORE_CHANGES: match::{match_cnt} mismatch::{mismatch_cnt} new:{new_cnt}")
         return self.old_proposed_scores
 
     def check_for_nni_map_changes(self):
@@ -1210,18 +1183,18 @@ class Program:
                 print_v("--- + ---")
                 print_v(f"# iter_count: {iter_count} of {args.iter_max}...")
 
-            pcsps = dag.build_set_of_edge_bitsets()
+            # capture pcsps before grafting for PV comparison.
+            if do_check_for_pv_map_changes:
+                pcsps = dag.build_set_of_edge_bitsets()
 
             # run iteration of search
-            results.predata_begin_iter(
-                iter_count, dag, nni_engine, pp_maps)
+            results.predata_begin_iter(iter_count, dag, nni_engine, pp_maps)
             if do_print_dag_stats:
                 print_v("# dag:", dag.node_count(), dag.edge_count())
             tree_pp = results.pre_data_['tree_pp']
             tree_pp_total = results.pre_data_['tree_pp_total']
             if do_print_dag_stats:
-                print_v(
-                    f"# dag_tree_pp: {round(tree_pp, digits)} {round((tree_pp/tree_pp_total)*100, 2)}%")
+                print_v(f"# dag_tree_pp: {round(tree_pp, digits)} {round((tree_pp/tree_pp_total)*100, 2)}%")
 
             timer.start()
             timer.start("full_iter")
@@ -1240,8 +1213,6 @@ class Program:
             nni_engine.filter_pre_score()
             timer.lap_next("filter_pre_score")
 
-            # !CHANGE
-            # nni_engine.filter_eval_adjacent_nnis()
             nni_engine.filter_score_adjacent_nnis()
             timer.lap_next("filter_score_adjacent_nnis")
 
@@ -1252,11 +1223,11 @@ class Program:
                 current_pv_map = tracker.check_for_pv_value_map_changes(pcsps)
                 pass
 
+            timer.start()
             nni_engine.filter_post_score()
             timer.lap_next("filter_post_score")
 
-            results.predata_mid_iter(
-                iter_count, dag, nni_engine, pp_maps)
+            results.predata_mid_iter(iter_count, dag, nni_engine, pp_maps)
 
             if do_print_scored_nnis:
                 nni_inst.print_scored_nnis()
@@ -1266,8 +1237,6 @@ class Program:
                 break
 
             timer.start()
-            # !CHANGE
-            # nni_engine.filter_process_adjacent_nnis()
             nni_engine.filter_evaluate_adjacent_nnis()
             timer.lap_next("filter_evaluate_adjacent_nnis")
 
@@ -1278,17 +1247,12 @@ class Program:
             nni_engine.remove_all_graft_nnis_from_dag()
             timer.lap_next("remove_all_graft_nnis_from_dag")
 
-            # if iter_count == 8:
-            #     print("=== DISABLED BRANCH LENGTH OPTIMIZATION ===")
-            #     nni_engine.get_tp_engine().set_optimization_max_iteration(0)
-
             nni_engine.add_accepted_nnis_to_dag()
             timer.lap_next("add_accepted_nnis_to_dag")
 
-            pcsps = dag.build_set_of_edge_bitsets()
-
             # check for changes to the PVs.
             if do_check_for_pv_map_changes:
+                pcsps = dag.build_set_of_edge_bitsets()
                 print("#PV_CHECK_AFTER_ADD_ACCEPTED_NNIS")
                 current_pv_map = tracker.check_for_pv_hash_map_changes(pcsps)
                 current_pv_map = tracker.check_for_pv_value_map_changes(pcsps)
@@ -1298,8 +1262,7 @@ class Program:
             timer.stop("full_iter")
 
             ### LOG DATA ENTRY ###
-            results.predata_end_iter(
-                iter_count, dag, nni_engine, pp_maps)
+            results.predata_end_iter(iter_count, dag, nni_engine, pp_maps)
             results.add_entry(iter_count, dag, nni_engine, pp_maps)
             results.write_dataframe_to_file(args.output)
 
@@ -1362,8 +1325,7 @@ class Program:
         ### SUMMARY OUTPUT ###
         if do_print_tracker_summary:
             print_v("\n=== TRACKER SUMMARY ===")
-            print_v(
-                f"  proposed_score_mismatches: {tracker.proposed_score_mismatches}")
+            print_v(f"  proposed_score_mismatches: {tracker.proposed_score_mismatches}")
             print_v(f"  dag_score_mismatches: {tracker.dag_score_mismatches}")
             print_v(f"  compare_score_mismatches: {tracker.compare_score_mismatches}")
 
@@ -1379,18 +1341,15 @@ class Program:
         # compare results to golden run.
         if args.test:
             nni_list = results.data_["nni_hash"]
-            golden_git_commit, golden_nni_list = Loader.load_nni_list(
-                args.test)
+            golden_git_commit, golden_nni_list = Loader.load_nni_list(args.test)
             print_v("\n=== TEST ===")
-            print_v(
-                f"# GIT_COMMIT: TEST::{bito.git_commit()} GOLDEN::{golden_git_commit}")
+            print_v(f"# GIT_COMMIT: TEST::{bito.git_commit()} GOLDEN::{golden_git_commit}")
             if (nni_list == golden_nni_list):
                 print_v("# TEST_PASSED -- accepted NNIs matches golden run.")
             else:
                 print_v("# TEST_FAILED -- accepted NNIs do not match golden run.")
 
-            print_v(
-                f"# {'ITER':<7} {'RESULT':<10} {'TEST_NNI':<20} {'GOLDEN_NNI':<20}")
+            print_v(f"# {'ITER':<7} {'RESULT':<10} {'TEST_NNI':<20} {'GOLDEN_NNI':<20}")
             for i in range(max(len(golden_nni_list), len(nni_list))):
                 nni = "None"
                 if (i < len(nni_list)):
@@ -1411,8 +1370,7 @@ class Program:
 
     @staticmethod
     def build_credible_set(args):
-        taxon_id_map, tree_nwk_map, tree_pp_map, tree_cpp_map = Loader.load_trprobs(
-            args.trprobs, args)
+        taxon_id_map, tree_nwk_map, tree_pp_map, tree_cpp_map = Loader.load_trprobs(args.trprobs, args)
         print_v("Credible:")
         print_v(tree_cpp_map)
         fp_trees = open(args.tree_output, 'w')
@@ -1492,7 +1450,7 @@ class Program:
 ############
 
 if __name__ == "__main__":
-    print_v("# begin...")
+    print_v(f"# begin... [commit={bito.git_commit()}]")
     args = Program.parse_args(sys.argv[1:])
     Program.run_program(args)
-    print_v("# ...done")
+    print_v(f"# ...done [commit={bito.git_commit()}]")
