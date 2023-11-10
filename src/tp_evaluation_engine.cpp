@@ -278,6 +278,7 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterDAGAddNodePair(
 
 bool watch_all = false;
 std::set<std::string> nni_watchlist{{"0xFE0C0"}};
+auto BitsetToHash = [](const Bitset &bitset) { return bitset.ToHashString(5); };
 
 void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
     const std::map<NNIOperation, NNIOperation> &nni_to_pre_nni,
@@ -369,14 +370,46 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
   }
 
   // TODO Print Branch Lengths.
-  std::cout << "  === BEFORE_MODIFYING_DAG ===" << std::endl;
+  std::cout << "  === INIT_MODIFYING_DAG ===" << std::endl;
   if (is_on_watchlist) {
     for (auto &[edge_id, nni_info] : nni_infos) {
       std::cout << nni_info.post_nni.ToHashString(5) << ": PCSPS [ ";
       for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
         std::cout << nni_info.adj_pcsps[adj_nni_type].ToHashString(5) << " ";
       }
+
       std::cout << "]" << std::endl;
+      std::cout << nni_info.post_nni.ToHashString(5) << ": ADJ_CHOICES " << std::endl;
+      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+        auto edge_id = nni_info.adj_edge_ids[adj_nni_type];
+        if (edge_id == NoId) {
+          std::cout << "  [ ]" << std::endl;
+          continue;
+        }
+        auto pcsps = GetTPEngine().GetChoiceMap().GetEdgeChoicePCSPs(edge_id);
+        std::cout << "  [ ";
+        for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+          std::cout << pcsps[adj_nni_type].ToHashString(5) << " ";
+        }
+        std::cout << "]" << std::endl;
+      }
+
+      std::cout << nni_info.post_nni.ToHashString(5) << ": REF_CHOICES " << std::endl;
+      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+        std::cout << NNIAdjacentEnum::ToString(adj_nni_type) << " ";
+        auto edge_id = nni_info.ref_edge_ids[adj_nni_type];
+        if (edge_id == NoId) {
+          std::cout << "  [ ]" << std::endl;
+          continue;
+        }
+        auto pcsps = GetTPEngine().GetChoiceMap().GetEdgeChoicePCSPs(edge_id);
+        std::cout << "  [ ";
+        for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+          std::cout << pcsps[adj_nni_type].ToHashString(5) << " ";
+        }
+        std::cout << "]" << std::endl;
+      }
+
       std::cout << nni_info.post_nni.ToHashString(5) << ": OLD_EDGES [ ";
       for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
         std::cout << !nni_info.do_optimize_edge[adj_nni_type] << " ";
@@ -497,8 +530,41 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
 
   RootwardPass();
   LeafwardPass();
+
+  // TODO Print Branch Lengths.
+  std::cout << "  === BEFORE_MODIFYING_DAG ===" << std::endl;
+  if (is_on_watchlist) {
+    for (auto &[edge_id, nni_info] : nni_infos) {
+      std::cout << nni_info.post_nni.ToHashString(5) << ": PCSPS [ ";
+      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+        std::cout << nni_info.adj_pcsps[adj_nni_type].ToHashString(5) << " ";
+      }
+      std::cout << "]" << std::endl;
+      std::cout << nni_info.post_nni.ToHashString(5) << ": OLD_EDGES [ ";
+      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+        std::cout << !nni_info.do_optimize_edge[adj_nni_type] << " ";
+      }
+      std::cout << "]" << std::endl;
+      std::cout << nni_info.post_nni.ToHashString(5) << ": PVS [ ";
+      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+        std::cout << GetPVs().ToHashString(nni_info.ref_primary_pv_ids[adj_nni_type], 5)
+                  << " ";
+      }
+      std::cout << "]" << std::endl;
+      std::cout << nni_info.post_nni.ToHashString(5) << ": BEFORE_BLS [ ";
+      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+        if (nni_info.adj_edge_ids[adj_nni_type] == NoId) continue;
+        std::cout << DblToScientific(
+                         branch_handler_(nni_info.adj_edge_ids[adj_nni_type]))
+                  << " ";
+      }
+      std::cout << "]" << std::endl;
+    }
+  }
+
   os << "UpdateEngineAfterModifyingDAG::Leafward/RootwardPass: " << timer.Lap()
      << std::endl;
+
   if (IsOptimizeNewEdges()) {
     Stopwatch optimization_timer(true, Stopwatch::TimeScale::SecondScale);
     for (size_t iter = 0; iter < optimize_max_iter_; iter++) {
@@ -653,6 +719,37 @@ double TPEvalEngineViaLikelihood::GetTopTreeScoreWithProposedNNI(
       std::cout << adj_pcsps[adj_nni_type].ToHashString(5) << " ";
     }
     std::cout << "]" << std::endl;
+
+    std::cout << nni_info.post_nni.ToHashString(5) << ": ADJ_CHOICES " << std::endl;
+    for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+      auto edge_id = nni_info.adj_edge_ids[adj_nni_type];
+      if (edge_id == NoId) {
+        std::cout << "  [ ]" << std::endl;
+        continue;
+      }
+      auto pcsps = GetTPEngine().GetChoiceMap().GetEdgeChoicePCSPs(edge_id);
+      std::cout << "  [ ";
+      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+        std::cout << pcsps[adj_nni_type].ToHashString(5) << " ";
+      }
+      std::cout << "]" << std::endl;
+    }
+
+    std::cout << nni_info.post_nni.ToHashString(5) << ": REF_CHOICES " << std::endl;
+    for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+      auto edge_id = nni_info.ref_edge_ids[adj_nni_type];
+      if (edge_id == NoId) {
+        std::cout << "  [ ]" << std::endl;
+        continue;
+      }
+      auto pcsps = GetTPEngine().GetChoiceMap().GetEdgeChoicePCSPs(edge_id);
+      std::cout << "  [ ";
+      for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
+        std::cout << pcsps[adj_nni_type].ToHashString(5) << " ";
+      }
+      std::cout << "]" << std::endl;
+    }
+
     std::cout << nni_info.post_nni.ToHashString(5) << ": OLD_EDGES [ ";
     for (auto adj_nni_type : NNIAdjacentEnum::Iterator()) {
       std::cout << (nni_info.adj_edge_ids[adj_nni_type] != NoId) << " ";

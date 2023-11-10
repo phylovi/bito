@@ -13,6 +13,7 @@
 #include <vector>
 #include <queue>
 #include <iomanip>
+#include <functional>
 
 #include "intpack.hpp"
 #include "prettyprint.hpp"
@@ -91,6 +92,19 @@ inline std::string DblToScientific(const double value, const int precision = 3) 
   std::stringstream ss;
   ss.precision(precision);
   ss << std::scientific << value;
+  return ss.str();
+}
+
+template <typename Type, typename ArrayType>
+std::string ArrayToString(
+    const ArrayType &array, std::function<std::string(const Type &)> &func =
+                                [](const Type &val) { return val; }) {
+  std::stringstream ss;
+  ss << "[ ";
+  for (const Type &val : array) {
+    ss << func(val) << " ";
+  }
+  ss << "]";
   return ss.str();
 }
 
