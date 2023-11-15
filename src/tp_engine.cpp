@@ -1463,7 +1463,6 @@ void TPEngine::UpdateScoresAfterDAGAddNodePair(const NNIOperation &post_nni,
 double TPEngine::GetTopTreeScoreWithProposedNNI(
     const NNIOperation &post_nni, const NNIOperation &pre_nni,
     const size_t spare_offset, std::optional<BitsetEdgeIdMap> best_edge_map_opt) {
-  // TODO let TPEngine find pre-NNI.
   std::ignore = pre_nni;
   auto best_pre_nni = FindHighestPriorityNeighborNNIInDAG(post_nni);
   return GetEvalEngine().GetTopTreeScoreWithProposedNNI(

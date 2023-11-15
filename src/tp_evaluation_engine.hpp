@@ -335,8 +335,7 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   // ** Scoring Helpers
 
   // Set the P-PVs to match the observed site patterns at the leaves.
-  void PopulateLeafPVsWithSitePatterns(
-      std::optional<EdgeIdVector> opt_edge_ids = std::nullopt);
+  void PopulateLeafPVsWithSitePatterns();
   // Set the R-PVs to the stationary distribution at the root and rootsplits.
   void PopulateRootPVsWithStationaryDistribution(
       std::optional<EdgeIdVector> opt_edge_ids = std::nullopt);

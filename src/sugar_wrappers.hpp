@@ -163,7 +163,6 @@ class EnumWrapper {
  public:
   using Type = EnumType;
   using Iterator = EnumIterator<EnumType, FirstEnum, LastEnum>;
-
   template <class DataType>
   using Array = EnumArray<EnumType, EnumCount, DataType>;
 

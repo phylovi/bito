@@ -23,7 +23,7 @@ sort_taxa = False
 digits = 5
 # number of optimization iterations
 # whether to rescore or reevaluate rejected nnis (use None for default behavior)
-do_rescore_all_nnis = None
+do_rescore_all_nnis = True
 do_reeval_all_nnis = None
 # nni evaluation settings
 optimization_max_iteration = 5
@@ -42,7 +42,7 @@ do_print_scored_nnis = False
 do_print_accepted_nnis = True
 do_print_summary = True
 # diagnostics: track changes to the DAG
-do_run_tracker = False
+do_run_tracker = True
 do_print_tracker_summary = True
 do_check_for_dag_changes = True
 do_check_for_nni_score_changes = True
