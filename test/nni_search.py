@@ -23,7 +23,7 @@ sort_taxa = False
 digits = 5
 # number of optimization iterations
 # whether to rescore or reevaluate rejected nnis (use None for default behavior)
-do_rescore_all_nnis = True
+do_rescore_all_nnis = None
 do_reeval_all_nnis = None
 # nni evaluation settings
 optimization_max_iteration = 5
@@ -32,7 +32,7 @@ do_use_best_edge_map = True
 do_init_proposed_bls_with_dag = True
 do_fix_proposed_bls_from_dag = True
 # terminate search when all credible edges found
-do_end_when_all_creds_found = True
+do_end_when_all_creds_found = False
 # print data
 do_print_setup_data = False
 do_print_iter_data = True
@@ -42,8 +42,8 @@ do_print_scored_nnis = False
 do_print_accepted_nnis = True
 do_print_summary = True
 # diagnostics: track changes to the DAG
-do_run_tracker = True
-do_print_tracker_summary = True
+do_run_tracker = False
+do_print_tracker_summary = False
 do_check_for_dag_changes = True
 do_check_for_nni_score_changes = True
 do_check_for_choice_map_changes = True
@@ -53,10 +53,8 @@ do_check_for_pv_map_changes = True
 do_check_for_bl_map_changes = True
 do_check_for_dag_score_changes = True
 
-# specific subsplits to watch
-pcsp_watchlist = {'[0x332a6||0x2b739]', '[0x16178||0xe250d]',
-                  '[0xb9c33||0xd54ff]', '[0xa4b8d||0x93ad6]'}
-subsplit_watchlist = {'0x11f2c', '0x44af5'}
+# specific subsplits to watch.
+subsplit_watchlist = {}
 
 
 def print_v(*args, v=verbose):

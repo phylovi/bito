@@ -95,19 +95,6 @@ inline std::string DblToScientific(const double value, const int precision = 3) 
   return ss.str();
 }
 
-template <typename Type, typename ArrayType>
-std::string ArrayToString(
-    const ArrayType &array, std::function<std::string(const Type &)> &func =
-                                [](const Type &val) { return val; }) {
-  std::stringstream ss;
-  ss << "[ ";
-  for (const Type &val : array) {
-    ss << func(val) << " ";
-  }
-  ss << "]";
-  return ss.str();
-}
-
 // We implement problems in terms of exceptions. That means that they work great
 // in Jupyter notebooks.
 //
