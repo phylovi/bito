@@ -148,12 +148,6 @@ void TPEvalEngineViaLikelihood::PopulateRootwardPVs() {
   for (const auto node_id : rootward_node_ids) {
     PopulateRootwardPVForNode(node_id);
   }
-
-  // TODO instead of using nodes, switch to edges?
-  // const auto rootward_edge_ids = GetDAG().RootwardEdgeTraversalTrace(true);
-  // for (const auto edge_id : rootward_edge_ids) {
-  //   PopulateRootwardPVForEdge(edge_id);
-  // }
 }
 
 void TPEvalEngineViaLikelihood::PopulateLeafwardPVs() {
@@ -161,12 +155,6 @@ void TPEvalEngineViaLikelihood::PopulateLeafwardPVs() {
   for (const auto node_id : leafward_node_ids) {
     PopulateLeafwardPVForNode(node_id);
   }
-
-  // TODO instead of using nodes, switch to edges?
-  // const auto leafward_edge_ids = GetDAG().LeafwardEdgeTraversalTrace(true);
-  // for (const auto edge_id : leafward_edge_ids) {
-  //   PopulateLeafwardPVForEdge(edge_id);
-  // }
 }
 
 void TPEvalEngineViaLikelihood::GrowNodeData(
@@ -347,12 +335,6 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
       auto adj_edge_id = nni_info.adj_edge_ids[adj_nni_type];
       nni_info.do_optimize_edge[adj_nni_type] =
           (new_edges.find(adj_edge_id) != new_edges.end());
-      // if (adj_edge_id != NoId) {
-      //   if (nni_info.do_optimize_edge[adj_nni_type]) {
-      //     auto ref_edge_id = nni_info.ref_edge_ids[adj_nni_type];
-      //     branch_handler_(adj_edge_id) = branch_handler_(ref_edge_id);
-      //   }
-      // }
     }
   }
 
@@ -369,46 +351,6 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
       PopulateLeafwardPVForEdge(edge_id);
     }
   };
-
-  // // TODO can we remove this?
-  // auto NNIRootwardPass = [&](const EdgeId edge_id) {
-  //   const auto &choice = GetTPEngine().GetChoiceMap(edge_id);
-  //   const auto pv_ids = GetLocalPVIdsOfEdge(edge_id);
-  //   // Evolve up child P-PLVs.
-  //   SetToEvolvedPV(pv_ids.child_phatleft_, choice.left_child, pv_ids.leftchild_p_);
-  //   SetToEvolvedPV(pv_ids.child_phatright_, choice.right_child,
-  //   pv_ids.rightchild_p_); MultiplyPVs(pv_ids.child_p_, pv_ids.child_phatleft_,
-  //   pv_ids.child_phatright_);
-  //   // Evolve up parent P-PLVs
-  //   SetToEvolvedPV(pv_ids.parent_phatsister_, choice.sister, pv_ids.sister_p_);
-  //   SetToEvolvedPV(pv_ids.parent_phatfocal_, edge_id, pv_ids.child_p_);
-  //   MultiplyPVs(pv_ids.parent_p_, pv_ids.parent_phatfocal_,
-  //   pv_ids.parent_phatsister_);
-  // };
-  // auto NNILeafwardPass = [&](const EdgeId edge_id) {
-  //   const auto &choice = GetTPEngine().GetChoiceMap(edge_id);
-  //   const auto pv_ids = GetLocalPVIdsOfEdge(edge_id);
-  //   // If the parent is not the DAG root, then evolve grandparent down to parent.
-  //   if (pv_ids.grandparent_rfocal_ != NoId) {
-  //     SetToEvolvedPV(pv_ids.parent_rhat_, choice.parent, pv_ids.grandparent_rfocal_);
-  //   }
-  //   // Evolve down parent R-PLVs.
-  //   MultiplyPVs(pv_ids.parent_rfocal_, pv_ids.parent_rhat_,
-  //   pv_ids.parent_phatsister_); MultiplyPVs(pv_ids.parent_rsister_,
-  //   pv_ids.parent_rhat_, pv_ids.parent_phatfocal_);
-  //   SetToEvolvedPV(pv_ids.child_rhat_, edge_id, pv_ids.parent_rfocal_);
-  //   // Update results.
-  //   MultiplyPVs(pv_ids.child_rleft_, pv_ids.child_rhat_, pv_ids.child_phatright_);
-  //   MultiplyPVs(pv_ids.child_rright_, pv_ids.child_rhat_, pv_ids.child_phatleft_);
-  // };
-  // auto NNIUpdatePVs = [&]() {
-  //   // Update new NNI PVs.
-  //   for (const auto edge_id : nni_edges) {
-  //     NNIRootwardPass(edge_id);
-  //     NNILeafwardPass(edge_id);
-  //   }
-  // };
-  // std::ignore = NNIUpdatePVs;
 
   auto OptimizeEdge = [&](const NNIAdjacent nni_adj_type, const EdgeId edge_id,
                           const EdgeId parent_edge_id, const EdgeId focal_edge_id,
