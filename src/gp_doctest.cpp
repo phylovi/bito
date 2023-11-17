@@ -3160,16 +3160,20 @@ TEST_CASE("TPEngine: Exporting Newicks") {
   const std::string newick_path_1 = "data/five_taxon_rooted.nwk";
   const std::string newick_path_2 = "data/five_taxon_rooted_shuffled.nwk";
 
+  // Build map of trees to tree_id.
   auto BuildTopTreeMapViaBruteForce = [](GPInstance& inst) {
-    std::vector<RootedTree> tree_map;
+    TreeIdTopologyMap tree_map;
+    std::vector<RootedTree> visited_trees;
     for (TreeId tree_id(0); tree_id < inst.GetTPEngine().GetMaxTreeId(); tree_id++) {
       std::vector<RootedTree> temp_trees;
+      // Find all edges that contain the given tree id.
       for (EdgeId edge_id{0}; edge_id < inst.GetDAG().EdgeCountWithLeafSubsplits();
            edge_id++) {
         if (inst.GetTPEngine().GetTreeSource(edge_id) != tree_id) {
           continue;
         }
         auto tree = inst.GetTPEngine().GetTopTreeWithEdge(edge_id);
+        // Check if this tree topology has already been found for this tree_id.
         bool tree_found = false;
         for (size_t i = 0; i < temp_trees.size(); i++) {
           if (tree == temp_trees[i]) {
@@ -3181,16 +3185,21 @@ TEST_CASE("TPEngine: Exporting Newicks") {
           temp_trees.push_back(tree);
         }
       }
+      // Add tree to map if does not already exist in map.
       for (const auto& tree : temp_trees) {
         bool tree_found = false;
-        for (const auto& old_tree : tree_map) {
-          if (tree == old_tree) {
+        for (const auto& visited_tree : visited_trees) {
+          if (tree == visited_tree) {
             tree_found = true;
             break;
           }
         }
         if (!tree_found) {
-          tree_map.push_back(tree);
+          if (tree_map.find(tree_id) == tree_map.end()) {
+            tree_map[tree_id] = {};
+          }
+          tree_map[tree_id].push_back(tree.Topology());
+          visited_trees.push_back(tree);
         }
       }
     }
@@ -3220,6 +3229,7 @@ TEST_CASE("TPEngine: Exporting Newicks") {
         std::ofstream file_out;
         // Use internal method for building Newick string.
         const std::string temp_newick_path_1 = "_ignore/temp_1.newick";
+        const auto tree_map_1 = inst_1.GetTPEngine().BuildMapOfTreeIdToTopTopologies();
         std::string newick_1 = inst_1.GetTPEngine().ToNewickOfTopTopologies();
         file_out.open(temp_newick_path_1);
         file_out << newick_1 << std::endl;
@@ -3229,9 +3239,12 @@ TEST_CASE("TPEngine: Exporting Newicks") {
         std::string newick_2;
         file_out.open(temp_newick_path_2);
         const auto tree_map_2 = BuildTopTreeMapViaBruteForce(inst_1);
-        for (const auto& tree : tree_map_2) {
-          newick_2 += inst_1.GetDAG().TreeToNewickTopology(tree) + '\n';
-          file_out << inst_1.GetDAG().TreeToNewickTopology(tree) << std::endl;
+        for (const auto& [tree_id, tree_vec] : tree_map_2) {
+          std::ignore = tree_id;
+          for (const auto& tree : tree_vec) {
+            newick_2 += inst_1.GetDAG().TopologyToNewickTopology(tree) + '\n';
+            file_out << inst_1.GetDAG().TopologyToNewickTopology(tree) << std::endl;
+          }
         }
         file_out.close();
         bool newicks_equal = (newick_1 == newick_2);
@@ -3239,6 +3252,23 @@ TEST_CASE("TPEngine: Exporting Newicks") {
           std::cerr << "ERROR: Newicks do not match." << std::endl;
           std::cerr << "NEWICK_TEST: " << std::endl << newick_1 << std::endl;
           std::cerr << "NEWICK_TRUTH: " << std::endl << newick_2 << std::endl;
+
+          auto TreeIdTopologyMapToString = [](const TreeIdTopologyMap& map) {
+            std::stringstream ss;
+            for (const auto& [tree_id, tree_vec] : map) {
+              ss << "(" << tree_id << ", [ ";
+              for (const auto& tree : tree_vec) {
+                ss << tree->Newick() << " ";
+              }
+              ss << "]), ";
+              ss << std::endl;
+            }
+            return ss.str();
+          };
+          std::cerr << "TREE_MAP_TEST: " << std::endl
+                    << TreeIdTopologyMapToString(tree_map_1) << std::endl;
+          std::cerr << "TREE_MAP_TRUTH: " << std::endl
+                    << TreeIdTopologyMapToString(tree_map_2) << std::endl;
         }
 
         // Build new TPEngine and check that old and new engines are equal.

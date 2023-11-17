@@ -825,7 +825,7 @@ std::vector<RootedTree> GPInstance::TPEngineGenerateCoveringTrees() {
   return GetDAG().GenerateCoveringTrees(GetTPEngine().GetBranchLengths());
 }
 
-TPEngine::TreeIdTreeMap GPInstance::TPEngineGenerateTopRootedTrees() {
+TreeIdTreeMap GPInstance::TPEngineGenerateTopRootedTrees() {
   return GetTPEngine().BuildMapOfTreeIdToTopTrees();
 }
 

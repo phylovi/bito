@@ -446,7 +446,6 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
     os << "UpdateEngineAfterModifyingDAG::OptimizeNewEdges: " << timer.Lap()
        << std::endl;
   }
-
   // Update scores.
   ComputeScores({{update_edges.begin(), update_edges.end()}});
   os << "UpdateEngineAfterModifyingDAG::ComputeScores: " << timer.Lap() << std::endl;

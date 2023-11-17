@@ -1545,7 +1545,7 @@ std::set<TreeId> TPEngine::FindTreeIdsInTreeEdgeVector(
   return tree_ids;
 }
 
-TPEngine::EdgeIdTopologyMap TPEngine::BuildMapOfEdgeIdToTopTopologies() const {
+EdgeIdTopologyMap TPEngine::BuildMapOfEdgeIdToTopTopologies() const {
   EdgeIdTopologyMap topology_map;
   BoolVector visited_edges(GetEdgeCount(), false);
   // Ignore rootsplit edges.
@@ -1577,7 +1577,7 @@ TPEngine::EdgeIdTopologyMap TPEngine::BuildMapOfEdgeIdToTopTopologies() const {
   return topology_map;
 }
 
-TPEngine::TreeIdTopologyMap TPEngine::BuildMapOfTreeIdToTopTopologies() const {
+TreeIdTopologyMap TPEngine::BuildMapOfTreeIdToTopTopologies() const {
   TreeIdTopologyMap topology_map;
   const auto edge_topology_map = BuildMapOfEdgeIdToTopTopologies();
   for (const auto &[edge_ids, topology] : edge_topology_map) {
@@ -1591,7 +1591,7 @@ TPEngine::TreeIdTopologyMap TPEngine::BuildMapOfTreeIdToTopTopologies() const {
   return topology_map;
 }
 
-TPEngine::TreeIdTreeMap TPEngine::BuildMapOfTreeIdToTopTrees() const {
+TreeIdTreeMap TPEngine::BuildMapOfTreeIdToTopTrees() const {
   TreeIdTreeMap tree_map;
   const auto topology_map = BuildMapOfTreeIdToTopTopologies();
   for (const auto &[tree_id, topology_vec] : topology_map) {

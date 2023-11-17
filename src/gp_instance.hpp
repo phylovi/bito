@@ -192,7 +192,7 @@ class GPInstance {
       std::optional<OptimizationMethod> method = std::nullopt);
 
   std::vector<RootedTree> TPEngineGenerateCoveringTrees();
-  TPEngine::TreeIdTreeMap TPEngineGenerateTopRootedTrees();
+  TreeIdTreeMap TPEngineGenerateTopRootedTrees();
 
   void TPEngineExportCoveringTrees(const std::string &out_path);
   void TPEngineExportTopTrees(const std::string &out_path);

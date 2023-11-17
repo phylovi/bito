@@ -48,6 +48,10 @@ using NNINNIMap = std::unordered_map<NNIOperation, NNIOperation>;
 using NNIAdjNodeIdMap = NNIAdjacentMap<std::pair<NodeId, NodeId>>;
 using NNIAdjBitsetEdgeIdMap = NNIAdjacentMap<std::pair<Bitset, EdgeId>>;
 
+using EdgeIdTopologyMap = std::vector<std::pair<std::set<EdgeId>, Node::Topology>>;
+using TreeIdTopologyMap = std::map<TreeId, std::vector<Node::Topology>>;
+using TreeIdTreeMap = std::map<TreeId, std::vector<RootedTree>>;
+
 class TPEngine {
  public:
   TPEngine(GPDAG &dag, SitePattern &site_pattern);
@@ -444,9 +448,6 @@ class TPEngine {
   // Use branch lengths to build tree from a topology that is contained in the DAG.
   RootedTree BuildTreeFromTopologyInDAG(const Node::Topology &topology) const;
 
-  using EdgeIdTopologyMap = std::vector<std::pair<std::set<EdgeId>, Node::Topology>>;
-  using TreeIdTopologyMap = std::map<TreeId, std::vector<Node::Topology>>;
-  using TreeIdTreeMap = std::map<TreeId, std::vector<RootedTree>>;
   // Build map containing all unique top tree topologies. Matched against all an
   // edge_id which results in given top tree.
   EdgeIdTopologyMap BuildMapOfEdgeIdToTopTopologies() const;
