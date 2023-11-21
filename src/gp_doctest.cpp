@@ -3250,15 +3250,19 @@ TEST_CASE("TPEngine: Exporting Newicks") {
         bool newicks_equal = (newick_1 == newick_2);
         if (!newicks_equal) {
           std::cerr << "ERROR: Newicks do not match." << std::endl;
-          std::cerr << "NEWICK_TEST: " << std::endl << newick_1 << std::endl;
-          std::cerr << "NEWICK_TRUTH: " << std::endl << newick_2 << std::endl;
+          // std::cerr << "NEWICK_TEST: " << std::endl << newick_1 << std::endl;
+          // std::cerr << "NEWICK_TRUTH: " << std::endl << newick_2 << std::endl;
 
           auto TreeIdTopologyMapToString = [](const TreeIdTopologyMap& map) {
             std::stringstream ss;
+            size_t tree_count = 0;
             for (const auto& [tree_id, tree_vec] : map) {
               ss << "(" << tree_id << ", [ ";
               for (const auto& tree : tree_vec) {
-                ss << tree->Newick() << " ";
+                std::string newick = tree->Newick();
+                size_t hash = std::hash<std::string>{}(newick);
+                ss << tree_count++ << " " << HashToString(hash, 5) << " "
+                   << tree->Newick() << " ";
               }
               ss << "]), ";
               ss << std::endl;

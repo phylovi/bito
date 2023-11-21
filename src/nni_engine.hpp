@@ -186,7 +186,6 @@ class NNIEngine {
     if (it_2 != GetPastScoredNNIs().end()) {
       return it_2->second;
     }
-    // Failwith("ERROR: Could not find NNI in ScoredNNIs.");
     return -INFINITY;
   }
 

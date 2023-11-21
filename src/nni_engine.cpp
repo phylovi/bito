@@ -728,13 +728,10 @@ void NNIEngine::AddAcceptedNNIsToDAG(const bool is_quiet) {
   }
   // Add NNI to DAG.
   os << "AddAcceptedNNIsToDAG::Prep: " << timer.Lap() << std::endl;
-  // BitsetPairVector nodes_to_add;
   for (const auto &nni : GetAcceptedNNIs()) {
     auto mods = GetDAG().AddNodePair(nni);
     mods_ = mods_.ComposeWith(mods);
-    // nodes_to_add.push_back({nni.GetParent(), nni.GetChild()});
   }
-  // mods_ = GetDAG().AddNodes(nodes_to_add);
   os << "AddAcceptedNNIsToDAG::AddAllAcceptedNNIs: " << timer.Lap() << std::endl;
   RemoveAllGraftedNNIsFromDAG();
   os << "AddAcceptedNNIsToDAG::RemoveGraftedNNIs: " << timer.Lap() << std::endl;
@@ -746,9 +743,7 @@ void NNIEngine::GraftAdjacentNNIsToDAG(const bool is_quiet) {
   BitsetPairVector nodes_to_add;
   for (const auto &nni : GetNNIsToRescore()) {
     GetGraftDAG().AddNodePair(nni);
-    // nodes_to_add.push_back({nni.GetParent(), nni.GetChild()});
   }
-  // GetGraftDAG().AddNodes(nodes_to_add);
 }
 
 void NNIEngine::RemoveAllGraftedNNIsFromDAG() { GetGraftDAG().RemoveAllGrafts(); }

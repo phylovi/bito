@@ -1097,8 +1097,6 @@ BitsetEdgeIdMap TPEngine::BuildMapOfProposedNNIPCSPsToBestPreNNIEdges(
     // higher tree_id, then update.
     if ((best_edge_ids.find(pcsp) == best_edge_ids.end()) ||
         (best_tree_ids[pcsp] > GetTreeSource(proposed_reference_edge_id))) {
-      // std::cerr << "WARNING: overriding post-PCSP in best pre-PCSP map." <<
-      // std::endl;
       best_edge_ids[pcsp] = proposed_reference_edge_id;
       best_tree_ids[pcsp] = GetTreeSource(proposed_reference_edge_id);
     }
@@ -1108,7 +1106,6 @@ BitsetEdgeIdMap TPEngine::BuildMapOfProposedNNIPCSPsToBestPreNNIEdges(
   for (const auto &post_nni : post_nnis) {
     // Get pre_nni and build map between them.
     const auto pre_nni = FindHighestPriorityNeighborNNIInDAG(post_nni);
-    // const auto pre_nnis = GetDAG().FindAllNNINeighborsInDAG(post_nni);
     // For each edge, build post-PCSP by taking the pre-NNIs choicemap PCSPs, then
     // join them with the post-NNI parent or child PCSPs. Finally, assigns the best
     // edge. Because the same post-PCSP can possibly come from multiple post-NNIs, we
@@ -1195,8 +1192,6 @@ TPChoiceMap::EdgeChoiceNodeIdMap TPEngine::BuildAdjacentNodeIdMapFromPreNNIToPos
   const auto pre_edge_id = GetDAG().GetEdgeIdx(pre_nni);
   const auto clade_map =
       NNIOperation::BuildNNICladeMapFromPreNNIToNNI(pre_nni, post_nni);
-  // const auto clade_map =
-  //     NNIOperation::BuildNNICladeMapFromPreNNIToNNI(post_nni, pre_nni);
   const auto node_ids = GetChoiceMap().GetEdgeChoiceNodeIds(pre_edge_id);
 
   node_id_map.parent = {node_ids[NNIClade::ParentFocal],
