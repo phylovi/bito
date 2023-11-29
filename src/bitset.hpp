@@ -24,7 +24,6 @@
 class Bitset {
  public:
   using BitsetPair = std::pair<Bitset, Bitset>;
-  explicit Bitset();
   // Builds Bitset from boolean vector.
   explicit Bitset(std::vector<bool> value);
   // Fills entire Bitset of size `n` with `initial_value`.
@@ -33,6 +32,8 @@ class Bitset {
   explicit Bitset(std::string bits_as_str);
   // Builds Bitset of size `n` with only indices in `bits_on` vector set to true.
   explicit Bitset(SizeVector bits_on, size_t n);
+  // Builds empty Bitset.
+  static Bitset EmptyBitset();
 
   // ** std::bitset Interface Methods
   // These methods are modeled after the std::bitset interface.

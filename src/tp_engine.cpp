@@ -1146,7 +1146,6 @@ BitsetBitsetMap TPEngine::BuildMapOfProposedNNIPCSPsToBestPreNNIPCSPs(
 
 NNIAdjBitsetEdgeIdMap TPEngine::BuildAdjacentPCSPsFromPreNNIToPostNNI(
     const NNIOperation &pre_nni, const NNIOperation &post_nni) const {
-  NNIAdjBitsetEdgeIdMap adj_pcsps;
   const auto pre_edge_id = GetDAG().GetEdgeIdx(pre_nni);
   const auto rev_clade_map =
       NNIOperation::BuildNNICladeMapFromPreNNIToNNI(post_nni, pre_nni);
@@ -1165,23 +1164,23 @@ NNIAdjBitsetEdgeIdMap TPEngine::BuildAdjacentPCSPsFromPreNNIToPostNNI(
   // Parent pcsp.
   const auto &parent_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.parent);
   const auto parent_pcsp = Bitset::PCSP(parent_subsplit, post_nni.GetParent());
-  adj_pcsps.parent = {parent_pcsp, mapped_pre_choice.parent};
   // Sister pcsp.
   const auto &sister_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.sister);
   const auto sister_pcsp = Bitset::PCSP(post_nni.GetParent(), sister_subsplit);
-  adj_pcsps.sister = {sister_pcsp, mapped_pre_choice.sister};
   // Central pcsp.
   const auto central_pcsp = Bitset::PCSP(post_nni.GetParent(), post_nni.GetChild());
-  adj_pcsps.focal = {central_pcsp, pre_edge_id};
   // Left Child pcsp.
   const auto &leftchild_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.left_child);
   const auto leftchild_pcsp = Bitset::PCSP(post_nni.GetChild(), leftchild_subsplit);
-  adj_pcsps.left_child = {leftchild_pcsp, mapped_pre_choice.left_child};
   // Right Child pcsp.
   const auto &rightchild_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.right_child);
   const auto rightchild_pcsp = Bitset::PCSP(post_nni.GetChild(), rightchild_subsplit);
-  adj_pcsps.right_child = {rightchild_pcsp, mapped_pre_choice.right_child};
 
+  NNIAdjBitsetEdgeIdMap adj_pcsps{{parent_pcsp, mapped_pre_choice.parent},
+                                  {sister_pcsp, mapped_pre_choice.sister},
+                                  {central_pcsp, pre_edge_id},
+                                  {leftchild_pcsp, mapped_pre_choice.left_child},
+                                  {rightchild_pcsp, mapped_pre_choice.right_child}};
   return adj_pcsps;
 }
 
@@ -1207,21 +1206,24 @@ TPChoiceMap::EdgeChoiceNodeIdMap TPEngine::BuildAdjacentNodeIdMapFromPreNNIToPos
 
 TPChoiceMap::EdgeChoicePCSPMap TPEngine::BuildAdjacentPCSPMapFromPreNNIToPostNNI(
     const NNIOperation &pre_nni, const NNIOperation &post_nni) const {
-  TPChoiceMap::EdgeChoicePCSPMap pcsps;
+  TPChoiceMap::EdgeChoicePCSPMap pcsps{{Bitset::EmptyBitset(), Bitset::EmptyBitset()},
+                                       {Bitset::EmptyBitset(), Bitset::EmptyBitset()},
+                                       {Bitset::EmptyBitset(), Bitset::EmptyBitset()},
+                                       {Bitset::EmptyBitset(), Bitset::EmptyBitset()}};
   const auto node_ids = BuildAdjacentNodeIdMapFromPreNNIToPostNNI(pre_nni, post_nni);
 
   const auto post_parent = post_nni.GetParent();
   const auto post_child = post_nni.GetChild();
   const auto post_grandparent = GetDAG().GetDAGNodeBitset(node_ids.parent.first);
-  pcsps.parent.first = Bitset::PCSP(post_grandparent, post_parent);
+  pcsps.parent.second = Bitset::PCSP(post_grandparent, post_parent);
   const auto post_sister = GetDAG().GetDAGNodeBitset(node_ids.sister.first);
-  pcsps.sister.first = Bitset::PCSP(post_parent, post_sister);
+  pcsps.sister.second = Bitset::PCSP(post_parent, post_sister);
   const auto post_left_grandchild =
       GetDAG().GetDAGNodeBitset(node_ids.left_child.first);
-  pcsps.left_child.first = Bitset::PCSP(post_child, post_left_grandchild);
+  pcsps.left_child.second = Bitset::PCSP(post_child, post_left_grandchild);
   const auto post_right_grandchild =
       GetDAG().GetDAGNodeBitset(node_ids.right_child.first);
-  pcsps.right_child.first = Bitset::PCSP(post_child, post_right_grandchild);
+  pcsps.right_child.second = Bitset::PCSP(post_child, post_right_grandchild);
 
   const auto pre_parent = pre_nni.GetParent();
   const auto pre_child = pre_nni.GetChild();
@@ -1627,16 +1629,18 @@ std::string TPEngine::ToNewickOfTopTrees() const {
 
 TPChoiceMap::EdgeChoicePCSPs TPEngine::BuildAdjacentPCSPsToProposedNNI(
     const NNIOperation &nni, const TPChoiceMap::EdgeChoiceNodeIds &adj_node_ids) const {
-  TPChoiceMap::EdgeChoicePCSPs adj_pcsps;
   const auto &parent_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.parent);
-  adj_pcsps.parent = Bitset::PCSP(parent_subsplit, nni.GetParent());
-  adj_pcsps.focal = Bitset::PCSP(nni.GetParent(), nni.GetChild());
+  const auto parent = Bitset::PCSP(parent_subsplit, nni.GetParent());
+  const auto focal = Bitset::PCSP(nni.GetParent(), nni.GetChild());
   const auto &sister_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.sister);
-  adj_pcsps.sister = Bitset::PCSP(nni.GetParent(), sister_subsplit);
+  const auto sister = Bitset::PCSP(nni.GetParent(), sister_subsplit);
   const auto &leftchild_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.left_child);
-  adj_pcsps.left_child = Bitset::PCSP(nni.GetChild(), leftchild_subsplit);
+  const auto left_child = Bitset::PCSP(nni.GetChild(), leftchild_subsplit);
   const auto &rightchild_subsplit = GetDAG().GetDAGNodeBitset(adj_node_ids.right_child);
-  adj_pcsps.right_child = Bitset::PCSP(nni.GetChild(), rightchild_subsplit);
+  const auto right_child = Bitset::PCSP(nni.GetChild(), rightchild_subsplit);
+
+  TPChoiceMap::EdgeChoicePCSPs adj_pcsps{parent, sister, focal, left_child,
+                                         right_child};
   return adj_pcsps;
 }
 

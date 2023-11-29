@@ -705,18 +705,17 @@ ProposedNNIInfo TPEvalEngineViaLikelihood::GetProposedNNIInfo(
   // Get temp locations for post-NNI branch lengths.
   const auto temp_edge_ids = GetTempEdgeIdsForProposedNNIs(spare_offset);
 
-  ProposedNNIInfo nni_info;
-  nni_info.post_nni = post_nni;
-  nni_info.pre_nni = pre_nni;
-  nni_info.temp_pv_ids = temp_pv_ids;
-  nni_info.temp_edge_ids = temp_edge_ids;
-  nni_info.ref_pv_ids = pre_pv_ids_remapped;
-  nni_info.ref_primary_pv_ids = ref_primary_pv_ids;
-  nni_info.ref_edge_ids = ref_edge_ids;
-  nni_info.ref_node_ids = ref_node_ids;
-  nni_info.adj_edge_ids = adj_edge_ids;
-  nni_info.adj_pcsps = adj_pcsps;
-  nni_info.do_optimize_edge = do_optimize_edge;
+  ProposedNNIInfo nni_info{post_nni,
+                           pre_nni,
+                           temp_pv_ids,
+                           temp_edge_ids,
+                           pre_pv_ids_remapped,
+                           ref_primary_pv_ids,
+                           ref_edge_ids,
+                           ref_node_ids,
+                           adj_edge_ids,
+                           adj_pcsps,
+                           do_optimize_edge};
 
   return nni_info;
 }

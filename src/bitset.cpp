@@ -10,7 +10,7 @@
 
 #include "sugar.hpp"
 
-Bitset::Bitset() : value_(0, false) {}
+// Bitset::Bitset() : value_(0, false) {}
 
 Bitset::Bitset(std::vector<bool> value) : value_(std::move(value)) {}
 
@@ -35,6 +35,8 @@ Bitset::Bitset(const SizeVector bits_on, const size_t n) : Bitset(n, false) {
     value_[i] = true;
   }
 }
+
+Bitset Bitset::EmptyBitset() { return Bitset(0, false); }
 
 // ** std::bitset Interface Methods
 

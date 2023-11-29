@@ -89,7 +89,6 @@ class TPChoiceMap {
   using EdgeChoiceNodeIdMap = EdgeAdjacentMap<std::pair<NodeId, NodeId>>;
   using EdgeChoicePCSPMap = EdgeAdjacentMap<std::pair<Bitset, Bitset>>;
   using EdgeChoiceVector = std::vector<EdgeChoice>;
-  // using TreeIdData = DAGEdgeData<std::vector<TreeId>, TreeId>;
   using TreeIdData = std::vector<TreeId>;
 
   // ** Constructors
@@ -144,7 +143,7 @@ class TPChoiceMap {
   EdgeAdjacentMap<T> RemapEdgeChoiceDataViaNNICladeMap(
       const EdgeAdjacentMap<T> &old_data,
       const NNIOperation::NNICladeArray &clade_map) const {
-    EdgeAdjacentMap<T> new_data;
+    EdgeAdjacentMap<T> new_data{old_data};
     auto SetNewDataFromOldData = [&old_data, &new_data,
                                   &clade_map](const NNIClade nni_clade) {
       new_data[clade_map[nni_clade]] = old_data[nni_clade];

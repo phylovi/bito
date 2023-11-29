@@ -51,7 +51,7 @@ TPChoiceMap::EdgeChoiceSubsplits TPChoiceMap::GetEdgeChoiceSubsplits(
     const EdgeChoice &edge_choice) const {
   auto GetSubsplitFromEdge = [this](const EdgeId edge_id, const Direction dir) {
     if (edge_id == NoId) {
-      return Bitset();
+      return Bitset::EmptyBitset();
     }
     const auto &edge = GetDAG().GetDAGEdge(edge_id);
     const auto node_id =
@@ -59,13 +59,11 @@ TPChoiceMap::EdgeChoiceSubsplits TPChoiceMap::GetEdgeChoiceSubsplits(
     return GetDAG().GetDAGNodeBitset(node_id);
   };
 
-  EdgeChoiceSubsplits choice_data;
-  choice_data.parent = GetSubsplitFromEdge(edge_choice.parent, Direction::Rootward);
-  choice_data.sister = GetSubsplitFromEdge(edge_choice.sister, Direction::Leafward);
-  choice_data.left_child =
-      GetSubsplitFromEdge(edge_choice.left_child, Direction::Leafward);
-  choice_data.right_child =
-      GetSubsplitFromEdge(edge_choice.right_child, Direction::Leafward);
+  EdgeChoiceSubsplits choice_data{
+      GetSubsplitFromEdge(edge_choice.parent, Direction::Rootward),
+      GetSubsplitFromEdge(edge_choice.sister, Direction::Leafward),
+      GetSubsplitFromEdge(edge_choice.left_child, Direction::Leafward),
+      GetSubsplitFromEdge(edge_choice.right_child, Direction::Leafward)};
   return choice_data;
 }
 
@@ -73,17 +71,15 @@ TPChoiceMap::EdgeChoicePCSPs TPChoiceMap::GetEdgeChoicePCSPs(
     const EdgeId edge_id) const {
   auto GetPCSPFromEdge = [this](const EdgeId edge_id) -> Bitset {
     if (edge_id == NoId) {
-      return Bitset();
+      return Bitset::EmptyBitset();
     }
     return GetDAG().GetDAGEdgeBitset(edge_id);
   };
-  EdgeChoicePCSPs choice_data;
   const auto &edge_choice = GetEdgeChoice(edge_id);
-  choice_data.parent = GetPCSPFromEdge(edge_choice.parent);
-  choice_data.sister = GetPCSPFromEdge(edge_choice.sister);
-  choice_data.focal = GetPCSPFromEdge(edge_id);
-  choice_data.left_child = GetPCSPFromEdge(edge_choice.left_child);
-  choice_data.right_child = GetPCSPFromEdge(edge_choice.right_child);
+  EdgeChoicePCSPs choice_data{
+      GetPCSPFromEdge(edge_choice.parent), GetPCSPFromEdge(edge_choice.sister),
+      GetPCSPFromEdge(edge_id), GetPCSPFromEdge(edge_choice.left_child),
+      GetPCSPFromEdge(edge_choice.right_child)};
   return choice_data;
 }
 
