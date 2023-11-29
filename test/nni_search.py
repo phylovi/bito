@@ -346,29 +346,7 @@ class Results:
         pass
 
     def data_init(self):
-        self.data_ = {
-            'iter': [],
-            'acc_nni_id': [],
-            'acc_nni_count': [],
-            'score': [],
-            'is_nni_cred': [],
-            'is_nni_new': [],
-            'tree_pp': [],
-            'pcsp_pp': [],
-            'pcsp_pp_rank': [],
-            'node_count': [],
-            'edge_count': [],
-            'cred_edge_count': [],
-            'tree_count': [],
-            'adj_nni_count': [],
-            'new_adj_nni_count': [],
-            "cred_adj_nni_count": [],
-            'llhs_computed': [],
-            'parent': [],
-            'child': [],
-            'pcsp': [],
-            'nni_hash': []
-        }
+        self.data_ = pd.DataFrame(columns=['iter', 'acc_nni_id', 'acc_nni_count', 'score', 'is_nni_cred', 'is_nni_new', 'tree_pp', 'pcsp_pp', 'pcsp_pp_rank', 'node_count', 'edge_count', 'cred_edge_count', 'tree_count', 'adj_nni_count', 'new_adj_nni_count', 'cred_adj_nni_count', 'llhs_computed', 'parent', 'child', 'pcsp', 'nni_hash'])
         pass
 
     def predata_init(self, dag, nni_engine, pp_maps):
@@ -426,34 +404,30 @@ class Results:
 
     def add_entry(self, iter_count, dag, nni_engine, pp_maps):
         for (nni_id, nni) in enumerate(nni_engine.accepted_nnis()):
-            self.data_['iter'].append(iter_count)
-            self.data_['acc_nni_id'].append(nni_id)
-            self.data_['acc_nni_count'].append(self.pre_data_['acc_nni_count'])
-            self.data_['score'].append(nni_engine.scored_nnis()[nni])
-            self.data_['tree_pp'].append(self.pre_data_['tree_pp'])
-            self.data_['pcsp_pp'].append(self.pre_data_['pcsp_pp'])
-            self.data_['is_nni_cred'].append((self.pre_data_['pcsp_pp'] > 0.0))
-            self.data_['is_nni_new'].append(
-                "T" if self.pre_data_['is_nni_new'] else "F")
-            self.data_['pcsp_pp_rank'].append(self.pre_data_['pcsp_pp_rank'])
-            self.data_['node_count'].append(dag.node_count())
-            self.data_['edge_count'].append(dag.edge_count())
-            self.data_['cred_edge_count'].append(
-                self.pre_data_['cred_edge_count'])
-            self.data_['tree_count'].append(dag.topology_count())
-            self.data_['adj_nni_count'].append(nni_engine.adjacent_nni_count())
-            self.data_['new_adj_nni_count'].append(
-                self.pre_data_['new_adj_nni_count'])
-            self.data_['cred_adj_nni_count'].append(
-                self.pre_data_['cred_adj_nni_count'])
-            self.data_['llhs_computed'].append(self.pre_data_['llhs_computed'])
-            self.data_['nni_hash'].append(f'{Utils.to_hash(nni)}')
-            self.data_['parent'].append(
-                nni.get_parent().subsplit_to_string())
-            self.data_['child'].append(
-                nni.get_child().subsplit_to_string())
-            self.data_['pcsp'].append(
-                nni.get_central_edge_pcsp().pcsp_to_string())
+            new_row = {
+              'iter': iter_count,
+              'acc_nni_id': nni_id,
+              'acc_nni_count': self.pre_data_['acc_nni_count'],
+              'score': nni_engine.scored_nnis()[nni],
+              'tree_pp': self.pre_data_['tree_pp'],
+              'pcsp_pp': self.pre_data_['pcsp_pp'],
+              'is_nni_cred': (self.pre_data_['pcsp_pp'] > 0.0),
+              'is_nni_new': ("T" if self.pre_data_['is_nni_new'] else "F"),
+              'pcsp_pp_rank': self.pre_data_['pcsp_pp_rank'],
+              'node_count': dag.node_count(),
+              'edge_count': dag.edge_count(),
+              'cred_edge_count': self.pre_data_['cred_edge_count'],
+              'tree_count': dag.topology_count(),
+              'adj_nni_count': nni_engine.adjacent_nni_count(),
+              'new_adj_nni_count': self.pre_data_['new_adj_nni_count'],
+              'cred_adj_nni_count': self.pre_data_['cred_adj_nni_count'],
+              'llhs_computed': self.pre_data_['llhs_computed'],
+              'parent': nni.get_parent().subsplit_to_string(),
+              'child': nni.get_child().subsplit_to_string(),
+              'pcsp': nni.get_central_edge_pcsp().pcsp_to_string(),
+              'nni_hash': f'{Utils.to_hash(nni)}'
+            }
+            self.data_.loc[len(self.data_.index)] = new_row
         pass
 
     def found_all_credible_edges(self):
@@ -461,17 +435,13 @@ class Results:
             self.data_['cred_edge_count']) - 2] == self.pre_data_['cred_edge_total']
         return found_all
 
-    def to_dataframe(self):
-        self.df_ = pd.DataFrame(self.data_)
-        return self.df_
-
     def write_dataframe_to_file(self, file_path):
-        df = self.to_dataframe()
+        df = self.data_
         df.to_csv(file_path)
         return df
 
     def to_summary(self, timer):
-        df = self.to_dataframe()
+        df = self.data_
         prv_iter = -1
         total_time = 0
         for loop_iter in range(len(df)):

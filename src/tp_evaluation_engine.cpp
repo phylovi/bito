@@ -341,7 +341,6 @@ void TPEvalEngineViaLikelihood::UpdateEngineAfterModifyingDAG(
     } else {
       optimize_counter[edge_id] = optimize_counter[edge_id] + 1;
     }
-    // const auto parent_edge_id = GetTPEngine().GetChoiceMap(edge_id).parent;
     const auto focal = GetDAG().GetFocalClade(edge_id);
     const auto sister = GetDAG().GetSisterClade(edge_id);
     if (is_not_child_edge) {

@@ -946,6 +946,7 @@ PYBIND11_MODULE(bito, m) {
       .def(
           "get_graft_dag", [](NNIEngine &self) { return self.GetGraftDAG(); },
           py::return_value_policy::reference, "Get the Graft DAG.")
+      // NNI Sets
       .def("adjacent_nnis", &NNIEngine::GetAdjacentNNIs, "Get NNIs adjacent to DAG.")
       .def("new_adjacent_nnis", &NNIEngine::GetNewAdjacentNNIs,
            "Get new NNIs adjacent to DAG.")
@@ -953,6 +954,12 @@ PYBIND11_MODULE(bito, m) {
       .def("rejected_nnis", &NNIEngine::GetRejectedNNIs, "Get NNIs rejected from DAG.")
       .def("scored_nnis", &NNIEngine::GetScoredNNIs,
            "Get Scored NNIs of current iteration.")
+      .def("past_scored_nnis", &NNIEngine::GetPastScoredNNIs,
+           "Get scores from NNIs from previous iterations.")
+      .def("nnis_to_rescore", &NNIEngine::GetNNIsToRescore,
+           "Get NNIs to be scored (or rescored) in current iteration.")
+      .def("nnis_to_reevaluate", &NNIEngine::GetNNIsToReevaluate,
+           "Get NNIs to be evaluated (or reevaluated) in current iteration.")
       // Counts
       .def("adjacent_nni_count", &NNIEngine::GetAdjacentNNICount,
            "Get number of NNIs adjacent to DAG.")
@@ -970,12 +977,10 @@ PYBIND11_MODULE(bito, m) {
       .def("past_rejected_nni_count", &NNIEngine::GetPastRejectedNNICount,
            "Get number of adjacent NNIs were rejected by the filter on all previous "
            "iterations.")
-      .def("past_scored_nnis", &NNIEngine::GetPastScoredNNIs,
-           "Get scores from NNIs from previous iterations.")
+      .def("scored_nni_count", &NNIEngine::GetScoredNNICount,
+           "Get number of current NNI scores.")
       .def("iter_count", &NNIEngine::GetIterationCount,
            "Get number of iterations of NNI search run.")
-      .def("nnis_to_rescore", &NNIEngine::GetNNIsToRescore,
-           "Get NNIs to be scored in current iteration.")
       // Search primary routines
       .def("run", &NNIEngine::Run, "Primary runner for NNI systematic search.",
            py::arg("is_quiet") = true)

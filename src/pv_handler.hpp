@@ -367,33 +367,8 @@ class PartialVectorHandler {
     return MaxDifference(pv_a, pv_b);
   }
 
-  double Min(const PVId pvid_a) const {
-    auto &pv_a = GetPV(pvid_a);
-    double min_val = INFINITY;
-    for (int i = 0; i < pv_a.rows(); i++) {
-      for (int j = 0; j < pv_a.cols(); j++) {
-        double val = pv_a(i, j);
-        if (val < min_val) {
-          min_val = val;
-        }
-      }
-    }
-    return min_val;
-  }
-
-  double Max(const PVId pvid_a) const {
-    auto &pv_a = GetPV(pvid_a);
-    double max_val = -INFINITY;
-    for (int i = 0; i < pv_a.rows(); i++) {
-      for (int j = 0; j < pv_a.cols(); j++) {
-        double val = pv_a(i, j);
-        if (val > max_val) {
-          max_val = val;
-        }
-      }
-    }
-    return max_val;
-  }
+  double Min(const PVId pvid) const { return GetPV(pvid).minCoeff(); }
+  double Max(const PVId pvid) const { return GetPV(pvid).maxCoeff(); }
 
   // ** I/O
 

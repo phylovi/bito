@@ -3166,14 +3166,14 @@ TEST_CASE("TPEngine: Exporting Newicks") {
     std::vector<RootedTree> visited_trees;
     for (TreeId tree_id(0); tree_id < inst.GetTPEngine().GetMaxTreeId(); tree_id++) {
       std::vector<RootedTree> temp_trees;
-      // Find all edges that contain the given tree id.
+      // Find all edges that contain the given tree_id.
       for (EdgeId edge_id{0}; edge_id < inst.GetDAG().EdgeCountWithLeafSubsplits();
            edge_id++) {
         if (inst.GetTPEngine().GetTreeSource(edge_id) != tree_id) {
           continue;
         }
         auto tree = inst.GetTPEngine().GetTopTreeWithEdge(edge_id);
-        // Check if this tree topology has already been found for this tree_id.
+        // Check if the edge's tree topology has already been found for this tree_id.
         bool tree_found = false;
         for (size_t i = 0; i < temp_trees.size(); i++) {
           if (tree == temp_trees[i]) {
@@ -3253,7 +3253,7 @@ TEST_CASE("TPEngine: Exporting Newicks") {
           // std::cerr << "NEWICK_TEST: " << std::endl << newick_1 << std::endl;
           // std::cerr << "NEWICK_TRUTH: " << std::endl << newick_2 << std::endl;
 
-          auto TreeIdTopologyMapToString = [](const TreeIdTopologyMap& map) {
+          auto TreeIdTopologyMapToString = [&inst_1](const TreeIdTopologyMap& map) {
             std::stringstream ss;
             size_t tree_count = 0;
             for (const auto& [tree_id, tree_vec] : map) {
@@ -3261,11 +3261,13 @@ TEST_CASE("TPEngine: Exporting Newicks") {
               for (const auto& tree : tree_vec) {
                 std::string newick = tree->Newick();
                 size_t hash = std::hash<std::string>{}(newick);
+                const auto& tpengine = inst_1.GetTPEngine();
+                auto tree_ids = tpengine.FindTreeIdsInTreeEdgeVector(
+                    tpengine.BuildSetOfEdgesRepresentingTopology(tree));
                 ss << tree_count++ << " " << HashToString(hash, 5) << " "
-                   << tree->Newick() << " ";
+                   << tree->Newick() << " " << tree_ids << " ";
               }
-              ss << "]), ";
-              ss << std::endl;
+              ss << "]), " << std::endl;
             }
             return ss.str();
           };

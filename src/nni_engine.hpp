@@ -149,20 +149,22 @@ class NNIEngine {
   const NNISet &GetNNIsToRescore() const {
     return GetRescoreRejectedNNIs() ? GetAdjacentNNIs() : GetNewAdjacentNNIs();
   }
+  size_t GetNNIToRescoreCount() const { return GetNNIsToRescore().size(); }
+  const NNIDoubleMap &GetScoredNNIsToRescore() const {
+    return GetRescoreRejectedNNIs() ? scored_nnis_ : new_scored_nnis_;
+  }
+  const DoubleNNIPairSet &GetSortedScoredNNIsToRescore() const {
+    return GetRescoreRejectedNNIs() ? sorted_scored_nnis_ : new_sorted_scored_nnis_;
+  }
   // Returns NNIs we want to consider adding to the DAG. Depending on the option
   // chosen, this will either be strictly new adjacent NNIs or all adjacent NNIs
   // (including previously rejected NNIs)
   const NNISet &GetNNIsToReevaluate() const {
     return GetReevaluateRejectedNNIs() ? GetAdjacentNNIs() : GetNewAdjacentNNIs();
   }
-  const NNIDoubleMap &GetScoredNNIsToRescore() const {
-    return GetRescoreRejectedNNIs() ? scored_nnis_ : new_scored_nnis_;
-  }
+  size_t GetNNIsToReevaluateCount() const { return GetNNIsToReevaluate().size(); }
   const NNIDoubleMap &GetScoredNNIsToReevaluate() const {
     return GetReevaluateRejectedNNIs() ? scored_nnis_ : new_scored_nnis_;
-  }
-  const DoubleNNIPairSet &GetSortedScoredNNIsToRescore() const {
-    return GetRescoreRejectedNNIs() ? sorted_scored_nnis_ : new_sorted_scored_nnis_;
   }
   const DoubleNNIPairSet &GetSortedScoredNNIsToReevaluate() const {
     return GetReevaluateRejectedNNIs() ? sorted_scored_nnis_ : new_sorted_scored_nnis_;
@@ -214,6 +216,8 @@ class NNIEngine {
   size_t GetIterationCount() const { return iter_count_; };
   // Reset number of iterations.
   void ResetIterationCount() { iter_count_ = 0; }
+
+  // ** Counts
 
   // ** NNI Evaluation Engine
 
@@ -269,9 +273,9 @@ class NNIEngine {
 
   // ** Filter Functions
 
-  // Initialization step for filter before first iteration.
+  // Function template for initialization step to be run on first iteration.
   using StaticFilterInitFunction = std::function<void(NNIEngine &)>;
-  // Function template for
+  // Function template for update step to be run at beginning or end of each iteration.
   using StaticFilterUpdateFunction = std::function<void(NNIEngine &)>;
   // Function template for scoring to be performed on each adjacent NNI.
   using StaticFilterScoreLoopFunction =
@@ -282,7 +286,8 @@ class NNIEngine {
                          const DoubleNNIPairSet &, NNISet &)>;
   using StaticFilterEvaluateLoopFunction =
       std::function<bool(NNIEngine &, const NNIOperation &, const double)>;
-  // Function template
+  // Function template for updating data structs after modifying DAG by adding
+  // accepted NNIs.
   using StaticFilterModificationFunction =
       std::function<void(NNIEngine &, const SubsplitDAG::ModificationResult &,
                          const std::map<NNIOperation, NNIOperation> &)>;
