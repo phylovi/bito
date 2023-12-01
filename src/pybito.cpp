@@ -10,10 +10,12 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl_bind.h>
+#include <pybind11/functional.h>
 #pragma GCC diagnostic pop
 
 #include <string>
 
+#include "sugar_version.hpp"
 #include "gp_instance.hpp"
 #include "phylo_flags.hpp"
 #include "rooted_gradient_transforms.hpp"
@@ -102,6 +104,10 @@ PYBIND11_MODULE(bito, m) {
                                {v.size()},         // Buffer dimensions
                                {sizeof(double)});  // Stride
       });
+
+  m.def("git_commit", &Version::GetGitCommit, "Get git commit of version build.");
+  m.def("git_branch", &Version::GetGitBranch, "Get git branch of version build.");
+  m.def("git_tags", &Version::GetGitTags, "Get git tag(s) of version build.");
 
   // CLASS
   // RootedTree
@@ -725,8 +731,6 @@ PYBIND11_MODULE(bito, m) {
       .def("make_gp_engine", &GPInstance::MakeGPEngine, "Initialize GP Engine.",
            py::arg("rescaling_threshold") = GPEngine::default_rescaling_threshold_,
            py::arg("use_gradients") = false)
-      // .def("get_gp_engine", &GPInstance::GetGPEngine,
-      //      py::return_value_policy::reference, "Get GP Engine.")
       .def(
           "get_gp_engine",
           [](GPInstance &self) -> GPEngine * { return &self.GetGPEngine(); },
@@ -868,6 +872,13 @@ PYBIND11_MODULE(bito, m) {
                                        "An engine for computing Top Pruning.");
   tp_engine_class.def("node_count", &TPEngine::GetNodeCount, "Get number of nodes.")
       .def("edge_count", &TPEngine::GetEdgeCount, "Get number of edges.")
+      .def("get_top_tree_score", &TPEngine::GetTopTreeScore)
+      .def(
+          "get_tree_source",
+          [](const TPEngine &self, const EdgeId edge_id) {
+            return self.GetTreeSource(edge_id);
+          },
+          "Get tree source of given edge")
       .def("get_top_tree_with_edge", &TPEngine::GetTopTreeWithEdge,
            "Output the top tree of tree containing given edge.")
       .def("get_top_tree_likelihood_with_edge", &TPEngine::GetTopTreeLikelihood,
@@ -880,7 +891,35 @@ PYBIND11_MODULE(bito, m) {
       .def("get_branch_lengths", [](TPEngine &self) { self.GetBranchLengths(); })
       .def("optimize_branch_lengths", &TPEngine::OptimizeBranchLengths,
            py::arg("check_branch_convergence") = std::nullopt)
+      // ** Settings
+      .def("is_optimize_new_edges", &TPEngine::IsOptimizeNewEdges)
+      .def("set_optimize_new_edges", &TPEngine::SetOptimizeNewEdges)
+      .def("set_optimization_max_iteration", &TPEngine::SetOptimizationMaxIteration)
+      .def("get_optimization_max_iteration", &TPEngine::GetOptimizationMaxIteration)
+      .def("get_use_best_edge_map", &TPEngine::GetUseBestEdgeMap)
+      .def("set_use_best_edge_map", &TPEngine::SetUseBestEdgeMap)
+      .def("is_init_proposed_branch_lengths_with_dag",
+           &TPEngine::IsInitProposedBranchLengthsWithDAG)
+      .def("set_init_proposed_branch_lengths_with_dag",
+           &TPEngine::SetInitProposedBranchLengthsWithDAG)
+      .def("is_fix_proposed_branch_lengths_from_dag",
+           &TPEngine::IsFixProposedBranchLengthsFromDAG)
+      .def("set_fix_proposed_branch_lengths_from_dag",
+           &TPEngine::SetFixProposedBranchLengthsFromDAG)
       // ** I/O
+      .def("build_map_from_pcsp_to_edge_choice_pcsps",
+           &TPEngine::BuildMapFromPCSPToEdgeChoicePCSPs)
+      .def("build_map_from_pcsp_to_pv_hashes", &TPEngine::BuildMapFromPCSPToPVHashes)
+      .def("build_map_from_pcsp_to_pv_values", &TPEngine::BuildMapFromPCSPToPVValues)
+      .def("build_map_from_pcsp_to_branch_length",
+           &TPEngine::BuildMapFromPCSPToBranchLength)
+      .def("build_map_from_pcsp_to_score", &TPEngine::BuildMapFromPCSPToScore)
+      .def("build_map_of_proposed_nnis_to_best_pre_nnis",
+           &TPEngine::BuildMapOfProposedNNIsToBestPreNNIs, py::arg("post_nnis"))
+      .def("build_map_of_proposed_nni_pcsps_to_best_pre_nni_pcsps",
+           &TPEngine::BuildMapOfProposedNNIPCSPsToBestPreNNIPCSPs, py::arg("post_nnis"),
+           py::arg("prev_edge_count") = std::nullopt,
+           py::arg("edge_reindexer") = std::nullopt)
       .def("build_map_of_tree_id_to_top_topologies",
            &TPEngine::BuildMapOfTreeIdToTopTopologies)
       .def("to_newick_of_top_topologies", &TPEngine::ToNewickOfTopTopologies)
@@ -899,25 +938,33 @@ PYBIND11_MODULE(bito, m) {
   py::class_<NNIEngine> nni_engine_class(
       m, "nni_engine", "An engine for computing NNI Systematic Search.");
   nni_engine_class
-      // Getters
+      // Access
+      .def(
+          "get_tp_engine",
+          [](const NNIEngine &self) -> const TPEngine * { return &self.GetTPEngine(); },
+          py::return_value_policy::reference, "Get TP Engine.")
       .def(
           "get_graft_dag", [](NNIEngine &self) { return self.GetGraftDAG(); },
           py::return_value_policy::reference, "Get the Graft DAG.")
-      .def(
-          "adjacent_nnis", [](NNIEngine &self) { return self.GetAdjacentNNIs(); },
-          "Get NNIs adjacent to DAG.")
-      .def(
-          "accepted_nnis", [](NNIEngine &self) { return self.GetAcceptedNNIs(); },
-          "Get NNIs accepted into DAG.")
-      .def(
-          "rejected_nnis", [](NNIEngine &self) { return self.GetRejectedNNIs(); },
-          "Get NNIs rejected from DAG.")
-      .def(
-          "scored_nnis", [](const NNIEngine &self) { return self.GetScoredNNIs(); },
-          "Get Scored NNIs of current iteration.")
+      // NNI Sets
+      .def("adjacent_nnis", &NNIEngine::GetAdjacentNNIs, "Get NNIs adjacent to DAG.")
+      .def("new_adjacent_nnis", &NNIEngine::GetNewAdjacentNNIs,
+           "Get new NNIs adjacent to DAG.")
+      .def("accepted_nnis", &NNIEngine::GetAcceptedNNIs, "Get NNIs accepted into DAG.")
+      .def("rejected_nnis", &NNIEngine::GetRejectedNNIs, "Get NNIs rejected from DAG.")
+      .def("scored_nnis", &NNIEngine::GetScoredNNIs,
+           "Get Scored NNIs of current iteration.")
+      .def("past_scored_nnis", &NNIEngine::GetPastScoredNNIs,
+           "Get scores from NNIs from previous iterations.")
+      .def("nnis_to_rescore", &NNIEngine::GetNNIsToRescore,
+           "Get NNIs to be scored (or rescored) in current iteration.")
+      .def("nnis_to_reevaluate", &NNIEngine::GetNNIsToReevaluate,
+           "Get NNIs to be evaluated (or reevaluated) in current iteration.")
       // Counts
       .def("adjacent_nni_count", &NNIEngine::GetAdjacentNNICount,
            "Get number of NNIs adjacent to DAG.")
+      .def("new_adjacent_nni_count", &NNIEngine::GetNewAdjacentNNICount,
+           "Get number of adjacent NNIs not seen in previous iterations.")
       .def("accepted_nni_count", &NNIEngine::GetAcceptedNNICount,
            "Get number of adjacent NNIs were accepted by the filter on current "
            "iteration.")
@@ -930,38 +977,41 @@ PYBIND11_MODULE(bito, m) {
       .def("past_rejected_nni_count", &NNIEngine::GetPastRejectedNNICount,
            "Get number of adjacent NNIs were rejected by the filter on all previous "
            "iterations.")
-      .def("past_scored_nnis", &NNIEngine::GetPastScoredNNIs,
-           "Get scores from NNIs from previous iterations.")
+      .def("scored_nni_count", &NNIEngine::GetScoredNNICount,
+           "Get number of current NNI scores.")
       .def("iter_count", &NNIEngine::GetIterationCount,
            "Get number of iterations of NNI search run.")
       // Search primary routines
       .def("run", &NNIEngine::Run, "Primary runner for NNI systematic search.",
-           py::arg("is_quiet") = false)
+           py::arg("is_quiet") = true)
       .def("run_init", &NNIEngine::RunInit, "Run initialization step of NNI search.",
-           py::arg("is_quiet") = false)
+           py::arg("is_quiet") = true)
       .def("run_main_loop", &NNIEngine::RunMainLoop, "Run main loop of NNI search.",
-           py::arg("is_quiet") = false)
+           py::arg("is_quiet") = true)
       .def("run_post_loop", &NNIEngine::RunPostLoop, "Run post loop of NNI search.",
-           py::arg("is_quiet") = false)
+           py::arg("is_quiet") = true)
       // Search subroutines
       // Init
-      .def("reset_all_nnis", &NNIEngine::ResetAllNNIs)
-      .def("sync_adjacent_nnis_with_dag", &NNIEngine::SyncAdjacentNNIsWithDAG)
+      .def("reset_nni_data", &NNIEngine::ResetNNIData)
+      .def("sync_adjacent_nnis_with_dag", &NNIEngine::SyncAdjacentNNIsWithDAG,
+           py::arg("on_init") = false)
       .def("prep_eval_engine", &NNIEngine::PrepEvalEngine)
       .def("filter_init", &NNIEngine::FilterInit)
-      // Main Loop
-      .def("graft_adjacent_nnis_to_dag", &NNIEngine::GraftAdjacentNNIsToDAG)
-      .def("filter_pre_update", &NNIEngine::FilterPreUpdate)
-      .def("filter_eval_adjacent_nnis", &NNIEngine::FilterEvaluateAdjacentNNIs)
-      .def("filter_post_update", &NNIEngine::FilterPostUpdate)
-      .def("filter_process_adjacent_nnis", &NNIEngine::FilterProcessAdjacentNNIs)
+      // Main Loop subroutines
+      .def("graft_adjacent_nnis_to_dag", &NNIEngine::GraftAdjacentNNIsToDAG,
+           py::arg("is_quiet") = true)
+      .def("filter_pre_score", &NNIEngine::FilterPreScore)
+      .def("filter_score_adjacent_nnis", &NNIEngine::FilterScoreAdjacentNNIs)
+      .def("filter_post_score", &NNIEngine::FilterPostScore)
+      .def("filter_evaluate_adjacent_nnis", &NNIEngine::FilterEvaluateAdjacentNNIs)
       .def("remove_all_graft_nnis_from_dag", &NNIEngine::RemoveAllGraftedNNIsFromDAG)
-      .def("add_accepted_nnis_to_dag", &NNIEngine::AddAcceptedNNIsToDAG)
-      // Post Loop
-      .def("update_adjacent_nnis", &NNIEngine::UpdateAdjacentNNIs)
-      .def("update_accepted_nnis", &NNIEngine::UpdateAcceptedNNIs)
+      .def("add_accepted_nnis_to_dag", &NNIEngine::AddAcceptedNNIsToDAG,
+           py::arg("is_quiet") = true)
+      // Post Loop subroutines
       .def("update_rejected_nnis", &NNIEngine::UpdateRejectedNNIs)
+      .def("update_adjacent_nnis", &NNIEngine::UpdateAdjacentNNIs)
       .def("update_scored_nnis", &NNIEngine::UpdateScoredNNIs)
+      .def("update_accepted_nnis", &NNIEngine::UpdateAcceptedNNIs)
       // Filtering schemes
       .def("set_no_filter", &NNIEngine::SetNoFilter,
            "Set filter to either accept (True) or deny (False) all NNIs.",
@@ -990,9 +1040,17 @@ PYBIND11_MODULE(bito, m) {
            &NNIEngine::SetTPParsimonyDropFilteringScheme,
            "Set filtering scheme to use Top Pruning with Parsimony based on drop from "
            "best score.")
-      .def("set_top_n_score_filtering_scheme", &NNIEngine::SetTopNScoreFilteringScheme,
+      .def("set_top_k_score_filtering_scheme", &NNIEngine::SetTopKScoreFilteringScheme,
            "Set filter scheme that accepts the top N best-scoring NNIs.",
-           py::arg("top_n"), py::arg("max_is_best") = true)
+           py::arg("top_k"), py::arg("max_is_best") = true)
+      // Custom filters
+      .def("set_filter_init_function", &NNIEngine::SetFilterInitFunction)
+      .def("set_filter_pre_score_function", &NNIEngine::SetFilterPreScoreFunction)
+      .def("set_filter_score_loop_function", &NNIEngine::SetFilterScoreLoopFunction)
+      .def("set_filter_post_score_function", &NNIEngine::SetFilterPostScoreFunction)
+      .def("set_filter_evaluate_function", &NNIEngine::SetFilterEvaluateFunction)
+      .def("set_filter_evaluate_loop_function",
+           &NNIEngine::SetFilterEvaluateLoopFunction)
       // Options
       .def("set_include_rootsplits", &NNIEngine::SetIncludeRootsplitNNIs,
            "Set whether to include rootsplits in adjacent NNIs")
@@ -1063,10 +1121,15 @@ PYBIND11_MODULE(bito, m) {
       m, "bitset", "A bitset representing the taxon membership of a Subsplit or PCSP.");
   bitset_class.def(py::init<const std::string &>())
       .def("__str__", &Bitset::ToString)
+      .def("__repr__", &Bitset::ToHashString)
       .def("__eq__",
            [](const Bitset &self, const Bitset &other) { return self == other; })
       .def("__hash__", &Bitset::Hash)
-      .def("to_string", &Bitset::ToString, "Output to bitset string.")
+      .def("to_string", &Bitset::ToString)
+      .def("to_hash_string", &Bitset::ToHashString, py::arg("length") = 16)
+      .def("subsplit_to_hash_string", &Bitset::SubsplitToHashString,
+           py::arg("length") = 16)
+      .def("pcsp_to_hash_string", &Bitset::PCSPToHashString, py::arg("length") = 16)
       .def("clade_get_count", &Bitset::Count)
       .def("subsplit_get_clade",
            [](const Bitset &self, const size_t i) {
@@ -1074,6 +1137,9 @@ PYBIND11_MODULE(bito, m) {
                  (i == 0) ? SubsplitClade::Left : SubsplitClade::Right;
              return self.SubsplitGetClade(clade);
            })
+      .def("subsplit_is_uca", &Bitset::SubsplitIsUCA)
+      .def("subsplit_is_rootsplit", &Bitset::SubsplitIsRootsplit)
+      .def("subsplit_is_leaf", &Bitset::SubsplitIsLeaf)
       .def("subsplit_to_string", &Bitset::SubsplitToString,
            "Output as Subsplit-style string.")
       .def("pcsp_to_string", &Bitset::PCSPToString, "Output as PCSP-style string.")
@@ -1126,10 +1192,12 @@ PYBIND11_MODULE(bito, m) {
       "A proposed NNI Operation for the DAG. Repesents the PCSP to be added.");
   nni_op_class.def(py::init<const std::string &, const std::string &>())
       .def("__str__", &NNIOperation::ToString)
+      .def("__repr__", &NNIOperation::ToHashString)
       .def("__eq__",
            [](const NNIOperation &lhs, const NNIOperation &rhs) { return lhs == rhs; })
       .def("__hash__", &NNIOperation::Hash)
-      .def("to_string", &NNIOperation::ToString, "Output to string")
+      .def("to_hash_string", &NNIOperation::ToHashString, py::arg("length") = 16)
+      .def("to_string", &NNIOperation::ToString)
       .def("get_parent", &NNIOperation::GetParent, "Get parent Subsplit of PCSP.")
       .def("get_child", &NNIOperation::GetChild, "Get child Subsplit of PCSP.")
       .def("get_central_edge_pcsp", &NNIOperation::GetCentralEdgePCSP,

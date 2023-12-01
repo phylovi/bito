@@ -10,6 +10,8 @@
 
 #include "sugar.hpp"
 
+// Bitset::Bitset() : value_(0, false) {}
+
 Bitset::Bitset(std::vector<bool> value) : value_(std::move(value)) {}
 
 Bitset::Bitset(const size_t n, const bool initial_value) : value_(n, initial_value) {}
@@ -33,6 +35,8 @@ Bitset::Bitset(const SizeVector bits_on, const size_t n) : Bitset(n, false) {
     value_[i] = true;
   }
 }
+
+Bitset Bitset::EmptyBitset() { return Bitset(0, false); }
 
 // ** std::bitset Interface Methods
 
@@ -154,6 +158,10 @@ std::string Bitset::ToString() const {
     str += (bit ? '1' : '0');
   }
   return str;
+}
+
+std::string Bitset::ToHashString(const size_t length) const {
+  return HashToString(Hash(), length);
 }
 
 std::vector<size_t> Bitset::ToVectorOfSetBits() const {
@@ -372,6 +380,14 @@ std::string Bitset::SubsplitToVectorOfSetBitsAsString() const {
   return str;
 }
 
+std::string Bitset::SubsplitToHashString(const size_t length) const {
+  std::stringstream ss;
+  ss << "[" << ToHashString(length) << "::" << SubsplitCladeUnion().ToHashString(length)
+     << "::" << SubsplitGetClade(SubsplitClade::Left).ToHashString(length) << "||"
+     << SubsplitGetClade(SubsplitClade::Right).ToHashString(length) << "]";
+  return ss.str();
+}
+
 size_t Bitset::SubsplitGetCladeSize() const {
   return MultiCladeGetCladeSize(SubsplitCladeCount);
 }
@@ -535,6 +551,13 @@ Bitset Bitset::PCSPGetChildSubsplit() const {
 }
 
 std::string Bitset::PCSPToString() const { return MultiCladeToString(PCSPCladeCount); }
+
+std::string Bitset::PCSPToHashString(const size_t length) const {
+  std::stringstream ss;
+  ss << PCSPGetParentSubsplit().SubsplitToHashString(length) << "_"
+     << PCSPGetChildSubsplit().SubsplitToHashString(length);
+  return ss.str();
+}
 
 bool Bitset::PCSPIsValid() const {
   if (size() % PCSPCladeCount != 0) {

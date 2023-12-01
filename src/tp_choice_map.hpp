@@ -18,58 +18,94 @@ using TreeId = GenericId<struct TreeIdTag>;
 
 class TPChoiceMap {
  public:
-  // Types of Adjacent Nodes
-  enum class AdjacentNode { Parent, LeftChild, RightChild };
-  // Types of Adjacent Edges
-  enum class AdjacentEdge { Parent, Sister, LeftChild, RightChild };
+  // Per-edge adjacent choices for given edge.
+  template <typename T>
+  struct EdgeAdjacentMap {
+    T parent;
+    T sister;
+    T left_child;
+    T right_child;
 
-  // Per-edge choices of best adjacent edges.
-  struct EdgeChoice {
-    EdgeId parent_edge_id = EdgeId(NoId);
-    EdgeId sister_edge_id = EdgeId(NoId);
-    EdgeId left_child_edge_id = EdgeId(NoId);
-    EdgeId right_child_edge_id = EdgeId(NoId);
+    T &operator[](EdgeAdjacent edge_adj) {
+      switch (edge_adj) {
+        case EdgeAdjacent::Parent:
+          return parent;
+        case EdgeAdjacent::Sister:
+          return sister;
+        case EdgeAdjacent::LeftChild:
+          return left_child;
+        case EdgeAdjacent::RightChild:
+          return right_child;
+      };
+      Failwith("ERROR: Invalid enum given.");
+    }
+    const T &operator[](EdgeAdjacent edge_adj) const {
+      switch (edge_adj) {
+        case EdgeAdjacent::Parent:
+          return parent;
+        case EdgeAdjacent::Sister:
+          return sister;
+        case EdgeAdjacent::LeftChild:
+          return left_child;
+        case EdgeAdjacent::RightChild:
+          return right_child;
+      };
+      Failwith("ERROR: Invalid enum given.");
+    }
+
+    T &operator[](NNIClade clade) {
+      switch (clade) {
+        case NNIClade::ParentFocal:
+          return parent;
+        case NNIClade::ParentSister:
+          return sister;
+        case NNIClade::ChildLeft:
+          return left_child;
+        case NNIClade::ChildRight:
+          return right_child;
+      }
+      Failwith("ERROR: Invalid enum given.");
+    }
+    const T &operator[](NNIClade clade) const {
+      switch (clade) {
+        case NNIClade::ParentFocal:
+          return parent;
+        case NNIClade::ParentSister:
+          return sister;
+        case NNIClade::ChildLeft:
+          return left_child;
+        case NNIClade::ChildRight:
+          return right_child;
+      }
+      Failwith("ERROR: Invalid enum given.");
+    }
   };
+
+  using EdgeChoice = EdgeAdjacentMap<EdgeId>;
+  using EdgeChoiceNodeIds = EdgeAdjacentMap<NodeId>;
+  using EdgeChoiceTreeIds = EdgeAdjacentMap<TreeId>;
+  using EdgeChoicePCSPs = NNIAdjacentMap<Bitset>;
+  using EdgeChoiceSubsplits = EdgeAdjacentMap<Bitset>;
+  using EdgeChoiceNodeIdMap = EdgeAdjacentMap<std::pair<NodeId, NodeId>>;
+  using EdgeChoicePCSPMap = EdgeAdjacentMap<std::pair<Bitset, Bitset>>;
   using EdgeChoiceVector = std::vector<EdgeChoice>;
+  using TreeIdData = std::vector<TreeId>;
 
-  friend bool operator==(const TPChoiceMap::EdgeChoice &lhs,
-                         const TPChoiceMap::EdgeChoice &rhs) {
-    if (lhs.parent_edge_id != rhs.parent_edge_id) return false;
-    if (lhs.sister_edge_id != rhs.sister_edge_id) return false;
-    if (lhs.left_child_edge_id != rhs.left_child_edge_id) return false;
-    if (lhs.left_child_edge_id != rhs.left_child_edge_id) return false;
-    return true;
-  }
-
-  // Per-edge choices of best adjacent nodes. Note: these are the nearest common nodes
-  // of an NNI Operation.
-  struct EdgeChoiceNodeIds {
-    NodeId parent_node_id = NodeId(NoId);
-    NodeId sister_node_id = NodeId(NoId);
-    NodeId left_child_node_id = NodeId(NoId);
-    NodeId right_child_node_id = NodeId(NoId);
-  };
-
-  // Per-edge choices associated tree_ids.
-  struct EdgeChoiceTreeIds {
-    TreeId parent_tree_id = TreeId(NoId);
-    TreeId sister_tree_id = TreeId(NoId);
-    TreeId left_child_tree_id = TreeId(NoId);
-    TreeId right_child_tree_id = TreeId(NoId);
-  };
-
-  struct EdgeChoicePCSPs {
-    Bitset parent_pcsp = Bitset(0);
-    Bitset focal_pcsp = Bitset(0);
-    Bitset sister_pcsp = Bitset(0);
-    Bitset left_child_pcsp = Bitset(0);
-    Bitset right_child_pcsp = Bitset(0);
-  };
+  // ** Constructors
 
   TPChoiceMap(GPDAG &dag)
       : dag_(dag), edge_choice_vector_(dag.EdgeCountWithLeafSubsplits()){};
 
   // ** Access
+
+  friend bool operator==(const TPChoiceMap::EdgeChoice &lhs,
+                         const TPChoiceMap::EdgeChoice &rhs) {
+    if (lhs.parent != rhs.parent) return false;
+    if (lhs.sister != rhs.sister) return false;
+    if (lhs.left_child != rhs.left_child) return false;
+    if (lhs.left_child != rhs.left_child) return false;
+    return true;
+  }
 
   // Size of edge choice map.
   size_t size() const { return edge_choice_vector_.size(); }
@@ -85,88 +121,37 @@ class TPChoiceMap {
   }
 
   // Get adjacent edge id in given edge's choice map for adjacent edge direction.
-  EdgeId GetEdgeChoice(const EdgeId edge_id, AdjacentEdge edge_choice_type) {
-    switch (edge_choice_type) {
-      case AdjacentEdge::Parent:
-        return edge_choice_vector_[edge_id.value_].parent_edge_id;
-      case AdjacentEdge::Sister:
-        return edge_choice_vector_[edge_id.value_].sister_edge_id;
-      case AdjacentEdge::LeftChild:
-        return edge_choice_vector_[edge_id.value_].left_child_edge_id;
-      case AdjacentEdge::RightChild:
-        return edge_choice_vector_[edge_id.value_].right_child_edge_id;
-      default:
-        Failwith("Invalid edge choice type.");
-    }
-  }
-
+  EdgeId GetEdgeChoice(const EdgeId edge_id, EdgeAdjacent edge_adj) const;
   // Set given edge choice map's given adjacent edge to the given new_edge_choice.
-  void SetEdgeChoice(const EdgeId edge_id, const AdjacentEdge edge_choice_type,
-                     const EdgeId new_edge_choice) {
-    switch (edge_choice_type) {
-      case AdjacentEdge::Parent:
-        edge_choice_vector_[edge_id.value_].parent_edge_id = new_edge_choice;
-        break;
-      case AdjacentEdge::Sister:
-        edge_choice_vector_[edge_id.value_].sister_edge_id = new_edge_choice;
-        break;
-      case AdjacentEdge::LeftChild:
-        edge_choice_vector_[edge_id.value_].left_child_edge_id = new_edge_choice;
-        break;
-      case AdjacentEdge::RightChild:
-        edge_choice_vector_[edge_id.value_].right_child_edge_id = new_edge_choice;
-        break;
-      default:
-        Failwith("Invalid edge choice type.");
-    }
-  }
+  void SetEdgeChoice(const EdgeId edge_id, const EdgeAdjacent edge_adj,
+                     const EdgeId new_edge_choice);
   // Re-initialize edge choices to NoId.
-  void ResetEdgeChoice(const EdgeId edge_id) {
-    edge_choice_vector_[edge_id.value_] = {EdgeId(NoId), EdgeId(NoId), EdgeId(NoId),
-                                           EdgeId(NoId)};
-  }
+  void ResetEdgeChoice(const EdgeId edge_id);
 
-  // Get the node ids corresponding to a given edge_id's choice map.
-  EdgeChoiceNodeIds GetEdgeChoiceNodeIds(const EdgeId edge_id) const {
-    const auto &edge_choice = GetEdgeChoice(edge_id);
-    return GetNodeIdsFromEdgeChoice(edge_choice);
-  }
-  EdgeChoiceNodeIds GetNodeIdsFromEdgeChoice(const EdgeChoice &edge_choice) const {
-    auto GetNodeFromEdge = [this](const EdgeId edge_id, const Direction direction) {
-      if (edge_id == NoId) {
-        return NodeId(NoId);
-      }
-      const auto &edge = GetDAG().GetDAGEdge(edge_id);
-      return (direction == Direction::Rootward) ? edge.GetParent() : edge.GetChild();
+  // Get data from edge_choice in choice map, according tp edge_id.
+  EdgeChoiceNodeIds GetEdgeChoiceNodeIds(const EdgeId edge_id) const;
+  EdgeChoicePCSPs GetEdgeChoicePCSPs(const EdgeId edge_id) const;
+  EdgeChoiceSubsplits GetEdgeChoiceSubsplits(const EdgeId edge_id) const;
+
+  // Get data from given edge_choice.
+  EdgeChoiceNodeIds GetEdgeChoiceNodeIds(const EdgeChoice &edge_choice) const;
+  EdgeChoicePCSPs GetEdgeChoicePCSPs(const EdgeChoice &edge_choice) const;
+  EdgeChoiceSubsplits GetEdgeChoiceSubsplits(const EdgeChoice &edge_choice) const;
+
+  // Apply NNI clade map transform from pre-NNI to post-NNI.
+  template <typename T>
+  EdgeAdjacentMap<T> RemapEdgeChoiceDataViaNNICladeMap(
+      const EdgeAdjacentMap<T> &old_data,
+      const NNIOperation::NNICladeArray &clade_map) const {
+    EdgeAdjacentMap<T> new_data{old_data};
+    auto SetNewDataFromOldData = [&old_data, &new_data,
+                                  &clade_map](const NNIClade nni_clade) {
+      new_data[clade_map[nni_clade]] = old_data[nni_clade];
     };
-
-    EdgeChoiceNodeIds node_choice;
-    node_choice.parent_node_id =
-        GetNodeFromEdge(edge_choice.parent_edge_id, Direction::Rootward);
-    node_choice.sister_node_id =
-        GetNodeFromEdge(edge_choice.sister_edge_id, Direction::Leafward);
-    node_choice.left_child_node_id =
-        GetNodeFromEdge(edge_choice.left_child_edge_id, Direction::Leafward);
-    node_choice.right_child_node_id =
-        GetNodeFromEdge(edge_choice.right_child_edge_id, Direction::Leafward);
-    return node_choice;
-  }
-
-  EdgeChoicePCSPs GetEdgeChoicePCSPs(const EdgeId edge_id) const {
-    EdgeChoicePCSPs adj_pcsps;
-    const auto &edge_choice = GetEdgeChoice(edge_id);
-    auto SetPCSPIfExists = [this](Bitset &adj_edge_bitset, const EdgeId adj_edge_id) {
-      if (adj_edge_id != NoId) {
-        adj_edge_bitset = GetDAG().GetDAGEdgeBitset(adj_edge_id);
-      }
-    };
-    SetPCSPIfExists(adj_pcsps.parent_pcsp, edge_choice.parent_edge_id);
-    SetPCSPIfExists(adj_pcsps.focal_pcsp, edge_id);
-    SetPCSPIfExists(adj_pcsps.sister_pcsp, edge_choice.sister_edge_id);
-    SetPCSPIfExists(adj_pcsps.left_child_pcsp, edge_choice.left_child_edge_id);
-    SetPCSPIfExists(adj_pcsps.right_child_pcsp, edge_choice.right_child_edge_id);
-
-    return adj_pcsps;
+    for (const auto nni_clade : NNICladeEnum::Iterator()) {
+      SetNewDataFromOldData(nni_clade);
+    }
+    return new_data;
   }
 
   // ** Maintenance
@@ -196,8 +181,8 @@ class TPChoiceMap {
   // the DAG, from the selected subset of DAG edges.
   using TreeMask = std::set<EdgeId>;
   // Extract TreeMask from DAG based on edge choices to find best tree with given
-  // central edge.
-  TreeMask ExtractTreeMask(const EdgeId central_edge_id) const;
+  // focal edge.
+  TreeMask ExtractTreeMask(const EdgeId initial_edge_id) const;
   // Checks that TreeMask represents a valid, complete tree in the DAG.
   // Specifically, checks that:
   // - There is a single edge that goes to the root.
@@ -211,8 +196,8 @@ class TPChoiceMap {
   // ** Topology
   // Extract tree topology from DAG based on edges choices to find best tree.
 
-  // Extract Topology from DAG with given central edge.
-  Node::Topology ExtractTopology(const EdgeId central_edge_id) const;
+  // Extract Topology from DAG with given focal edge.
+  Node::Topology ExtractTopology(const EdgeId initial_edge_id) const;
   Node::Topology ExtractTopology(const TreeMask &tree_mask) const;
 
   // ** I/O
@@ -223,6 +208,9 @@ class TPChoiceMap {
   static std::string EdgeChoiceToString(const EdgeChoice &edge_choice);
   // Output full choice map to string.
   std::string ToString() const;
+  // Output choice map as a PCSP Map from the focal edge to vector of adjacent edges.
+  using PCSPToPCSPVectorMap = std::map<Bitset, std::vector<Bitset>>;
+  PCSPToPCSPVectorMap BuildPCSPMap() const;
 
   // Output edge choice map.
   friend std::ostream &operator<<(std::ostream &os, const EdgeChoice &edge_choice);
@@ -234,11 +222,11 @@ class TPChoiceMap {
   // The ExpandedTreeMask contains a map from all the nodes of a TreeMask to their
   // associated parent, left and right child.
   template <typename T>
-  using AdjacentNodeArray = EnumArray<AdjacentNode, 3, T>;
-  using ExpandedTreeMask = std::map<NodeId, AdjacentNodeArray<NodeId>>;
+  using NodeAdjacentArray = EnumArray<NodeAdjacent, 3, T>;
+  using ExpandedTreeMask = std::map<NodeId, NodeAdjacentArray<NodeId>>;
 
-  // Extract an ExpandedTreeMask from DAG based on a central edge or previous TreeMask.
-  ExpandedTreeMask ExtractExpandedTreeMask(const EdgeId central_edge_id) const;
+  // Extract an ExpandedTreeMask from DAG based on a focal edge or previous TreeMask.
+  ExpandedTreeMask ExtractExpandedTreeMask(const EdgeId focal_edge_id) const;
   ExpandedTreeMask ExtractExpandedTreeMask(const TreeMask &tree_mask) const;
   // Extract Tree based on given ExpandedTreeMask.
   Node::Topology ExtractTopology(ExpandedTreeMask &tree_mask_ext) const;
@@ -249,6 +237,6 @@ class TPChoiceMap {
   GPDAG &dag_;
   // A vector that stores a map of each edge's best adjacent edges.
   EdgeChoiceVector edge_choice_vector_;
-  // A vector that sets the priority of each tree in the choice map.
-  DAGEdgeIntData tree_priority_;
+  // A vector that sets each edge's highest priority tree in the choice map.
+  TreeIdData tree_priority_;
 };

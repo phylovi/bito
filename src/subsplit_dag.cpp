@@ -457,6 +457,15 @@ EdgeIdVector SubsplitDAG::GetRootsplitEdgeIds() const {
   return edge_ids;
 }
 
+EdgeId SubsplitDAG::GetFirstRootsplitEdgeId() const {
+  const auto node_id = GetDAGRootNodeId();
+  for (const auto adj_node_id : GetRootsplitNodeIds()) {
+    const auto edge_id = GetEdgeIdx(node_id, adj_node_id);
+    return edge_id;
+  }
+  Failwith("ERROR: No found rootsplit nodes.");
+}
+
 NodeIdVector SubsplitDAG::GetLeafNodeIds() const {
   NodeIdVector node_ids;
   for (TaxonId taxon_id(0); taxon_id < TaxonCount(); taxon_id++) {
@@ -468,6 +477,20 @@ NodeIdVector SubsplitDAG::GetLeafNodeIds() const {
 
 NodeId SubsplitDAG::GetLeafNodeId(const TaxonId taxon_id) const {
   return NodeId(taxon_id.value_);
+}
+
+EdgeIdVector SubsplitDAG::GetLeafEdgeIds() const {
+  EdgeIdVector edge_ids;
+  for (const auto node_id : GetLeafNodeIds()) {
+    const auto node = GetDAGNode(node_id);
+    for (const auto clade : SubsplitCladeEnum::Iterator()) {
+      for (const auto adj_node_id : node.GetNeighbors(Direction::Rootward, clade)) {
+        const auto edge_id = GetEdgeIdx(adj_node_id, node.Id());
+        edge_ids.push_back(edge_id);
+      }
+    }
+  }
+  return edge_ids;
 }
 
 EdgeIdVector SubsplitDAG::GetLeafEdgeIds(const TaxonId taxon_id) const {
@@ -535,9 +558,7 @@ NNIOperation SubsplitDAG::GetNNI(const EdgeId edge_id) const {
 
 NNIOperation SubsplitDAG::FindNNINeighborInDAG(const NNIOperation &nni) const {
   for (const auto child_clade_swapped_with_sister : SubsplitCladeEnum::Iterator()) {
-    const bool which_swap =
-        (child_clade_swapped_with_sister == SubsplitClade::Left) ? false : true;
-    const auto &swapped_nni = nni.NNIOperationFromNeighboringSubsplits(which_swap);
+    const auto &swapped_nni = nni.GetNeighboringNNI(child_clade_swapped_with_sister);
     if (ContainsNNI(swapped_nni)) {
       const auto parent_id = GetDAGNodeId(swapped_nni.GetParent());
       const auto child_id = GetDAGNodeId(swapped_nni.GetChild());
@@ -554,16 +575,14 @@ SubsplitCladeEnum::Array<std::optional<NNIOperation>>
 SubsplitDAG::FindAllNNINeighborsInDAG(const NNIOperation &nni) const {
   SubsplitCladeEnum::Array<std::optional<NNIOperation>> neighbor_nnis;
   for (const auto child_clade_swapped_with_sister : SubsplitCladeEnum::Iterator()) {
-    const bool which_swap =
-        (child_clade_swapped_with_sister == SubsplitClade::Left) ? false : true;
-    const auto &swapped_nni = nni.NNIOperationFromNeighboringSubsplits(which_swap);
-    if (ContainsNNI(swapped_nni)) {
-      auto parent_id = GetDAGNodeId(swapped_nni.GetParent());
-      auto child_id = GetDAGNodeId(swapped_nni.GetChild());
+    const auto &neighbor_nni = nni.GetNeighboringNNI(child_clade_swapped_with_sister);
+    if (ContainsNNI(neighbor_nni)) {
+      auto parent_id = GetDAGNodeId(neighbor_nni.GetParent());
+      auto child_id = GetDAGNodeId(neighbor_nni.GetChild());
       if (parent_id > NodeCount() || child_id > NodeCount()) {
         neighbor_nnis[child_clade_swapped_with_sister] = std::nullopt;
       } else {
-        neighbor_nnis[child_clade_swapped_with_sister] = swapped_nni;
+        neighbor_nnis[child_clade_swapped_with_sister] = neighbor_nni;
       }
     } else {
       neighbor_nnis[child_clade_swapped_with_sister] = std::nullopt;
@@ -1724,7 +1743,6 @@ NodeIdVectorPair SubsplitDAG::FindChildNodeIdsViaMap(const Bitset &subsplit) con
 
 NodeIdVectorPair SubsplitDAG::FindParentNodeIdsViaScan(const Bitset &subsplit,
                                                        bool graft_nodes_only) const {
-  // Linear search for all parents.
   NodeIdVector left_parents, right_parents;
   for (const auto &[potential_parent_subsplit, node_id] : subsplit_to_id_) {
     if (graft_nodes_only && (node_id < NodeCount())) continue;
@@ -1739,7 +1757,6 @@ NodeIdVectorPair SubsplitDAG::FindParentNodeIdsViaScan(const Bitset &subsplit,
 
 NodeIdVectorPair SubsplitDAG::FindChildNodeIdsViaScan(const Bitset &subsplit,
                                                       bool graft_nodes_only) const {
-  // Linear search for all children.
   NodeIdVector left_children, right_children;
   for (const auto &[potential_child_subsplit, node_id] : subsplit_to_id_) {
     if (graft_nodes_only && (node_id < NodeCount())) continue;
@@ -1752,12 +1769,31 @@ NodeIdVectorPair SubsplitDAG::FindChildNodeIdsViaScan(const Bitset &subsplit,
   return {left_children, right_children};
 }
 
+std::pair<std::set<NodeId>, std::set<NodeId>> NodeIdVectorsToSets(
+    const NodeIdVectorPair &vecs) {
+  auto &[left, right] = vecs;
+  std::set<NodeId> left_set(left.begin(), left.end());
+  std::set<NodeId> right_set(right.begin(), right.end());
+  return {left_set, right_set};
+}
+
+template <typename ContainerType>
+void CompareNodeIds(const ContainerType &lhs, const ContainerType &rhs,
+                    const std::string &name) {
+  if (lhs != rhs) {
+    std::cerr << "ERROR: " << name << " NodeIds do not match --" << std::endl;
+    std::cerr << lhs << std::endl << rhs << std::endl;
+  }
+}
+
 NodeIdVectorPair SubsplitDAG::FindParentNodeIds(const Bitset &subsplit) const {
-  return FindParentNodeIdsViaMap(subsplit);
+  auto [left_map, right_map] = FindParentNodeIdsViaMap(subsplit);
+  return {left_map, right_map};
 }
 
 NodeIdVectorPair SubsplitDAG::FindChildNodeIds(const Bitset &subsplit) const {
-  return FindChildNodeIdsViaMap(subsplit);
+  auto [left_map, right_map] = FindChildNodeIdsViaMap(subsplit);
+  return {left_map, right_map};
 }
 
 NodeId SubsplitDAG::FindFirstParentNodeId(const Bitset &subsplit) const {
@@ -1861,6 +1897,43 @@ void SubsplitDAG::ConnectParentToAllParents(const Bitset &parent_subsplit,
 }
 
 // ** Modify DAG
+
+void SubsplitDAG::ModificationResult::Reinit(const SubsplitDAG &dag) {
+  prv_node_count = dag.NodeCount();
+  prv_edge_count = dag.EdgeCountWithLeafSubsplits();
+  node_reindexer = Reindexer::IdentityReindexer(prv_node_count);
+  edge_reindexer = Reindexer::IdentityReindexer(prv_edge_count);
+  added_node_ids = NodeIdVector();
+  added_edge_idxs = EdgeIdVector();
+}
+
+SubsplitDAG::ModificationResult SubsplitDAG::ModificationResult::ComposeWith(
+    const ModificationResult other) {
+  ModificationResult res;
+  res.prv_node_count = prv_node_count;
+  res.prv_edge_count = prv_edge_count;
+  res.cur_node_count = other.cur_node_count;
+  res.cur_edge_count = other.cur_edge_count;
+  res.node_reindexer = node_reindexer.ComposeWith(other.node_reindexer);
+  res.edge_reindexer = edge_reindexer.ComposeWith(other.edge_reindexer);
+  res.added_node_ids = NodeIdVector();
+  res.added_edge_idxs = EdgeIdVector();
+  for (const auto &node_id : added_node_ids) {
+    auto new_node_id =
+        NodeId(other.node_reindexer.GetNewIndexByOldIndex(node_id.value_));
+    res.added_node_ids.push_back(new_node_id);
+  }
+  for (const auto &edge_id : added_edge_idxs) {
+    auto new_edge_id =
+        EdgeId(other.edge_reindexer.GetNewIndexByOldIndex(edge_id.value_));
+    res.added_edge_idxs.push_back(new_edge_id);
+  }
+  res.added_node_ids.insert(res.added_node_ids.end(), other.added_node_ids.begin(),
+                            other.added_node_ids.end());
+  res.added_edge_idxs.insert(res.added_edge_idxs.end(), other.added_edge_idxs.begin(),
+                             other.added_edge_idxs.end());
+  return res;
+}
 
 SubsplitDAG::ModificationResult SubsplitDAG::AddNodePair(const NNIOperation &nni) {
   return AddNodePair(nni.parent_, nni.child_);

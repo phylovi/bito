@@ -12,6 +12,33 @@ project(bito)
 find_package(Python COMPONENTS Interpreter Development)
 set(BITO_VERSION "0.1")
 
+# capture git metadata
+set(GIT_HASH "unknown")
+set(GIT_BRANCH "unknown")
+set(GIT_TAGS "unknown")
+find_package(Git QUIET)
+
+if(GIT_FOUND)
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} log -1 --pretty=format:%h
+    OUTPUT_VARIABLE GIT_HASH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
+    OUTPUT_VARIABLE GIT_BRANCH
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+  execute_process(
+    COMMAND ${GIT_EXECUTABLE} git ls-remote --tags
+    OUTPUT_VARIABLE GIT_TAGS
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    ERROR_QUIET
+  )
+endif()
+
 set(CMAKE_SKIP_RPATH ON)
 execute_process(COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/get_rpath.py
   OUTPUT_VARIABLE BITO_RPATH
@@ -47,6 +74,9 @@ option(PROFILING "Compile with debugger and profiling symbols" OFF)
 function(bito_compile_opts PRODUCT WERROR_)
   target_compile_features(${PRODUCT} PUBLIC cxx_std_17)
   target_compile_options(${PRODUCT} PUBLIC -Wno-unknown-warning -Wno-unknown-warning-option -Wall)
+  target_compile_definitions(${PRODUCT} PUBLIC -DGIT_HASH="${GIT_HASH}")
+  target_compile_definitions(${PRODUCT} PUBLIC -DGIT_BRANCH="${GIT_BRANCH}")
+  target_compile_definitions(${PRODUCT} PUBLIC -DGIT_TAGS="${GIT_TAGS}")
 
   if(${WERROR_})
     target_compile_options(${PRODUCT} PUBLIC -Werror)

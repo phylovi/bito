@@ -217,7 +217,7 @@ class GenericNeighborsView {
     NodeId operator*() { return iter_->first; }
 
     NodeId GetNodeId() const { return iter_->first; }
-    EdgeId GetEdge() const { return iter_->second; }
+    EdgeId GetEdgeId() const { return iter_->second; }
 
    private:
     iterator_type iter_;

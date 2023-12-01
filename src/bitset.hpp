@@ -32,6 +32,8 @@ class Bitset {
   explicit Bitset(std::string bits_as_str);
   // Builds Bitset of size `n` with only indices in `bits_on` vector set to true.
   explicit Bitset(SizeVector bits_on, size_t n);
+  // Builds empty Bitset.
+  static Bitset EmptyBitset();
 
   // ** std::bitset Interface Methods
   // These methods are modeled after the std::bitset interface.
@@ -88,6 +90,8 @@ class Bitset {
   size_t Hash() const;
   // Outputs bitset as a string of "1" and "0"s.
   std::string ToString() const;
+  // Outputs hash as hex string.
+  std::string ToHashString(const size_t length = 16) const;
   // Outputs vector of all bit indices set to true.
   SizeVector ToVectorOfSetBits() const;
   // Are all of the bits 1?
@@ -162,6 +166,17 @@ class Bitset {
     static inline const std::string Prefix = "SubsplitClade";
     static inline const Array<std::string> Labels = {{"Left", "Right"}};
 
+    static SubsplitClade Opposite(const SubsplitClade clade) {
+      switch (clade) {
+        case SubsplitClade::Left:
+          return SubsplitClade::Right;
+        case SubsplitClade::Right:
+          return SubsplitClade::Left;
+        default:
+          Failwith("Cannot get Opposite of Unspecified Clade");
+      }
+    }
+
     static std::string ToString(const SubsplitClade e) {
       std::stringstream ss;
       ss << Prefix << "::" << Labels[e];
@@ -177,14 +192,7 @@ class Bitset {
       EnumIterator<SubsplitClade, SubsplitClade::Left, SubsplitClade::Right>;
 
   static SubsplitClade Opposite(const SubsplitClade clade) {
-    switch (clade) {
-      case SubsplitClade::Left:
-        return SubsplitClade::Right;
-      case SubsplitClade::Right:
-        return SubsplitClade::Left;
-      default:
-        Failwith("Cannot get Opposite of Unspecified Clade");
-    }
+    return SubsplitCladeEnum::Opposite(clade);
   }
 
   // Constructors:
@@ -245,6 +253,8 @@ class Bitset {
   // Output subsplit to string as a comma-separated list of true bits positions, with
   // each clade separated by a "|".
   std::string SubsplitToVectorOfSetBitsAsString() const;
+  // Output subsplit as each clade's hash, with each clade separated by "|".
+  std::string SubsplitToHashString(const size_t length = 16) const;
   // Is this the subsplit of a leaf node?
   bool SubsplitIsLeaf() const;
   // Is this the UCA subsplit?
@@ -320,6 +330,8 @@ class Bitset {
   // Output PCSP as string of "1" and "0" characters, with each clade separated by a
   // "|".
   std::string PCSPToString() const;
+  // Output PCSP as each clade's hash, with each clade separated by a "|".
+  std::string PCSPToHashString(const size_t length = 16) const;
   // Checks whether bitset represents a valid set of taxon clades for PCSP.
   bool PCSPIsValid() const;
   // Checks whether the PCSP child is a leaf subsplit.

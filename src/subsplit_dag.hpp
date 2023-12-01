@@ -44,6 +44,50 @@
 #include "node.hpp"
 #include "stopwatch.hpp"
 
+// Types of node neighbors/adjacencies.
+enum class NodeAdjacent { Parent, LeftChild, RightChild };
+static const inline size_t NodeAdjacentCount = 3;
+class NodeAdjacentEnum
+    : public EnumWrapper<NodeAdjacent, size_t, NodeAdjacentCount, NodeAdjacent::Parent,
+                         NodeAdjacent::RightChild> {
+ public:
+  static inline const std::string Prefix = "NodeAdjacent";
+  static inline const Array<std::string> Labels = {
+      {"Parent", "LeftChild", "RightChild"}};
+
+  static std::string ToString(const NodeAdjacent e) {
+    std::stringstream ss;
+    ss << Prefix << "::" << Labels[e];
+    return ss.str();
+  }
+  friend std::ostream &operator<<(std::ostream &os, const NodeAdjacent e) {
+    os << ToString(e);
+    return os;
+  }
+};
+
+// Types of edge neighbors/adjacencies.
+enum class EdgeAdjacent { Parent, Sister, LeftChild, RightChild };
+static const inline size_t EdgeAdjacentCount = 4;
+class EdgeAdjacentEnum
+    : public EnumWrapper<EdgeAdjacent, size_t, EdgeAdjacentCount, EdgeAdjacent::Parent,
+                         EdgeAdjacent::RightChild> {
+ public:
+  static inline const std::string Prefix = "EdgeAdjacent";
+  static inline const Array<std::string> Labels = {
+      {"Parent", "Sister", "LeftChild", "RightChild"}};
+
+  static std::string ToString(const EdgeAdjacent e) {
+    std::stringstream ss;
+    ss << Prefix << "::" << Labels[e];
+    return ss.str();
+  }
+  friend std::ostream &operator<<(std::ostream &os, const EdgeAdjacent e) {
+    os << ToString(e);
+    return os;
+  }
+};
+
 class SubsplitDAG {
  public:
   // ** Constructor
@@ -174,11 +218,14 @@ class SubsplitDAG {
   ConstNeighborsView GetRootsplitNodeIds() const;
   // Get the edge ids corresponding to the rootsplits.
   EdgeIdVector GetRootsplitEdgeIds() const;
+  // Get first edge id corresponding to the rootsplits.
+  EdgeId GetFirstRootsplitEdgeId() const;
   // Get the node ids corresponding to the leaves for all taxa.
   NodeIdVector GetLeafNodeIds() const;
   // Get the node id corresponding to the given taxon.
   NodeId GetLeafNodeId(const TaxonId taxon_id) const;
   // Get leaf edge ids for given taxon.
+  EdgeIdVector GetLeafEdgeIds() const;
   EdgeIdVector GetLeafEdgeIds(const TaxonId taxon_id) const;
   // Get edge based on edge id.
   ConstLineView GetDAGEdge(const EdgeId edge_id) const;
@@ -495,6 +542,12 @@ class SubsplitDAG {
     size_t cur_node_count;
     // Current edge count after modification.
     size_t cur_edge_count;
+
+    // Initialize a modification result that represents no changes in the DAG.
+    void Reinit(const SubsplitDAG &dag);
+    // Compose a modification result with a previous which represents the net changes
+    // across both changes in the DAG.
+    ModificationResult ComposeWith(const ModificationResult other);
   };
 
   // Add an adjacent node pair to the DAG.

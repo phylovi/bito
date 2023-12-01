@@ -41,35 +41,37 @@ bool operator!=(const NNIOperation &lhs, const NNIOperation &rhs) {
   return NNIOperation::Compare(lhs, rhs) != 0;
 }
 
-NNIOperation NNIOperation::NNIOperationFromNeighboringSubsplits(
+// ** Special Constructors
+
+NNIOperation NNIOperation::GetNeighboringNNI(
     const Bitset parent_in, const Bitset child_in,
-    const bool is_sister_swapped_with_right_child, const bool is_focal_clade_on_right) {
+    const SubsplitClade child_clade_swapped_with_sister,
+    const SubsplitClade focal_clade) {
   // Input: Parent(X,YZ) -> Child(Y,Z).
-  Bitset X = parent_in.SubsplitGetClade(!is_focal_clade_on_right);
+  Bitset X = parent_in.SubsplitGetClade(SubsplitCladeEnum::Opposite(focal_clade));
   // "Y" clade can be chosen arbitrarily from (Y,Z), so "Y" is chosen based on which
   // we want to swap with "X".
-  Bitset Y = child_in.SubsplitGetClade(is_sister_swapped_with_right_child);
-  Bitset Z = child_in.SubsplitGetClade(!is_sister_swapped_with_right_child);
+  Bitset Y = child_in.SubsplitGetClade(child_clade_swapped_with_sister);
+  Bitset Z = child_in.SubsplitGetClade(
+      SubsplitCladeEnum::Opposite(child_clade_swapped_with_sister));
   // Output: Parent(Y,XZ) -> Child(X,Z).
   Bitset parent_out = Bitset::Subsplit(Y, X | Z);
   Bitset child_out = Bitset::Subsplit(X, Z);
   return NNIOperation(parent_out, child_out);
 }
 
-NNIOperation NNIOperation::NNIOperationFromNeighboringSubsplits(
+NNIOperation NNIOperation::GetNeighboringNNI(
     const Bitset parent_in, const Bitset child_in,
-    const bool is_sister_swapped_with_right_child) {
-  SubsplitClade focal_clade_of_parent =
+    const SubsplitClade child_clade_swapped_with_sister) {
+  SubsplitClade focal_clade =
       Bitset::SubsplitIsChildOfWhichParentClade(parent_in, child_in);
-  const bool is_focal_clade_on_right = (focal_clade_of_parent == SubsplitClade::Right);
-  return NNIOperationFromNeighboringSubsplits(
-      parent_in, child_in, is_sister_swapped_with_right_child, is_focal_clade_on_right);
+  return GetNeighboringNNI(parent_in, child_in, child_clade_swapped_with_sister,
+                           focal_clade);
 }
 
-NNIOperation NNIOperation::NNIOperationFromNeighboringSubsplits(
-    const bool is_sister_swapped_with_right_child) const {
-  return NNIOperation::NNIOperationFromNeighboringSubsplits(
-      parent_, child_, is_sister_swapped_with_right_child);
+NNIOperation NNIOperation::GetNeighboringNNI(
+    const SubsplitClade child_clade_swapped_with_sister) const {
+  return GetNeighboringNNI(parent_, child_, child_clade_swapped_with_sister);
 }
 
 // ** Query
@@ -88,14 +90,15 @@ bool NNIOperation::AreNNIOperationsNeighbors(const NNIOperation &nni_a,
   return (vec_a == vec_b);
 };
 
-bool NNIOperation::WhichCladeSwapWithSisterToCreatePostNNI(
+SubsplitClade NNIOperation::WhichCladeSwapWithSisterToCreatePostNNI(
     const NNIOperation &pre_nni, const NNIOperation &post_nni) {
-  Assert(AreNNIOperationsNeighbors(pre_nni, post_nni),
-         "Given NNIs must be neighbors to find clade swap.");
   const Bitset &pre_sister = pre_nni.GetSisterClade();
-  bool is_sister_swapped_with_right_child =
-      (pre_sister == post_nni.GetRightChildClade());
-  return is_sister_swapped_with_right_child;
+  for (SubsplitClade child_clade : SubsplitCladeEnum::Iterator()) {
+    if (pre_sister == post_nni.GetChild().SubsplitGetClade(child_clade)) {
+      return child_clade;
+    }
+  }
+  Failwith("Given NNIs must be neighbors to find clade swap.");
 };
 
 // ** Miscellaneous
@@ -141,6 +144,17 @@ std::string NNIOperation::ToString() const {
   os << "{ P:" << parent_.SubsplitToString() << ", C:" << child_.SubsplitToString()
      << " }";
   return os.str();
+}
+
+std::string NNIOperation::ToHashString(const size_t length) const {
+  return HashToString(Hash(), length);
+}
+
+std::string NNIOperation::ToSplitHashString(const size_t length) const {
+  std::stringstream ss;
+  ss << "[" << HashToString(GetParent().Hash(), length) << "||"
+     << HashToString(GetChild().Hash(), length) << "]";
+  return ss.str();
 }
 
 std::ostream &operator<<(std::ostream &os, const NNIOperation &nni) {

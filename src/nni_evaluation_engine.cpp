@@ -13,6 +13,39 @@ NNIEvalEngine::NNIEvalEngine(NNIEngine &nni_engine)
       dag_(&nni_engine.GetDAG()),
       graft_dag_(&nni_engine.GetGraftDAG()) {}
 
+double NNIEvalEngine::GetScoreByNNI(const NNIOperation &nni) const {
+  auto it = GetScoredNNIs().find(nni);
+  Assert(it != GetScoredNNIs().end(), "NNI does not exist in NNI Evaluation Engine.");
+  return it->second;
+}
+
+double NNIEvalEngine::GetScoreByEdge(const EdgeId edge_id) const {
+  auto nni = GetDAG().GetNNI(edge_id);
+  return GetScoreByNNI(nni);
+}
+
+double NNIEvalEngine::GetMaxScore() const {
+  double max = -INFINITY;
+  for (const auto &[nni, score] : GetScoredNNIs()) {
+    std::ignore = nni;
+    if (max < score) {
+      max = score;
+    }
+  }
+  return max;
+}
+
+double NNIEvalEngine::GetMinScore() const {
+  double min = INFINITY;
+  for (const auto &[nni, score] : GetScoredNNIs()) {
+    std::ignore = nni;
+    if (min > score) {
+      min = score;
+    }
+  }
+  return min;
+}
+
 // ** NNIEvalEngineViaGP
 
 NNIEvalEngineViaGP::NNIEvalEngineViaGP(NNIEngine &nni_engine, GPEngine &gp_engine)
@@ -1046,11 +1079,15 @@ void NNIEvalEngineViaTP::UpdateEngineAfterModifyingDAG(
 }
 
 void NNIEvalEngineViaTP::ScoreAdjacentNNIs(const NNISet &adjacent_nnis) {
-  // Retrieve results from TPEngine and store in Scored NNIs.
-  const auto best_edge_map = GetTPEngine().BuildBestEdgeMapOverNNIs(adjacent_nnis);
+  std::optional<BitsetEdgeIdMap> best_edge_map = std::nullopt;
+  if (GetTPEngine().GetUseBestEdgeMap()) {
+    best_edge_map =
+        GetTPEngine().BuildMapOfProposedNNIPCSPsToBestPreNNIEdges(adjacent_nnis);
+  }
   for (const auto &nni : adjacent_nnis) {
     const auto pre_nni = GetDAG().FindNNINeighborInDAG(nni);
-    GetScoredNNIs()[nni] = GetTPEngine().GetTopTreeScoreWithProposedNNI(nni, pre_nni);
+    GetScoredNNIs()[nni] =
+        GetTPEngine().GetTopTreeScoreWithProposedNNI(nni, pre_nni, 0, best_edge_map);
   }
 }
 

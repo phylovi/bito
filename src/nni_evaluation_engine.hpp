@@ -32,6 +32,8 @@ class NNIEvalEngine {
 
   virtual ~NNIEvalEngine() {}
 
+  // ** Maintenance
+
   // Initialize Evaluation Engine.
   virtual void Init() { Failwith("Pure virtual function call."); }
   // Prepare Evaluation Engine for NNI Engine loop.
@@ -57,6 +59,9 @@ class NNIEvalEngine {
       const size_t prev_edge_count, const Reindexer &edge_reindexer) {
     Failwith("Pure virtual function call.");
   }
+
+  // ** Scoring
+
   // Grow Evaluation Engine to account for
   // Compute scores for all NNIs adjacent to current DAG.
   virtual void ScoreAdjacentNNIs(const NNISet &adjacent_nnis) {
@@ -82,70 +87,37 @@ class NNIEvalEngine {
   // ** Access
 
   // Get reference NNIEngine.
-  NNIEngine &GetNNIEngine() {
-    Assert(nni_engine_ != nullptr, "NNIEngine is not set.");
-    return *nni_engine_;
-  }
   const NNIEngine &GetNNIEngine() const {
     Assert(nni_engine_ != nullptr, "DAG is not set.");
     return *nni_engine_;
   }
   // Get reference DAG.
-  GPDAG &GetDAG() {
-    Assert(dag_ != nullptr, "DAG is not set.");
-    return *dag_;
-  }
   const GPDAG &GetDAG() const {
     Assert(dag_ != nullptr, "DAG is not set.");
     return *dag_;
   }
   // Get reference GraftDAG.
-  GraftDAG &GetGraftDAG() {
-    Assert(graft_dag_ != nullptr, "GraftDAG is not set.");
-    return *graft_dag_;
-  }
   const GraftDAG &GetGraftDAG() const {
     Assert(graft_dag_ != nullptr, "GraftDAG is not set.");
     return *graft_dag_;
   }
   // Get all Scored NNIs.
-  NNIDoubleMap &GetScoredNNIs() { return scored_nnis_; }
   const NNIDoubleMap &GetScoredNNIs() const { return scored_nnis_; }
 
   // Retrieve Score for given NNI.
-  double GetScoreByNNI(const NNIOperation &nni) const {
-    Assert(GetScoredNNIs().find(nni) != GetScoredNNIs().end(),
-           "NNI does not exist in NNI Evaluation Engine.");
-    return GetScoredNNIs().find(nni)->second;
-  }
+  double GetScoreByNNI(const NNIOperation &nni) const;
   // Retrieve Score for given edge in DAG.
-  double GetScoreByEdge(const EdgeId edge_id) const {
-    auto nni = GetDAG().GetNNI(edge_id);
-    return GetScoreByNNI(nni);
-  }
+  double GetScoreByEdge(const EdgeId edge_id) const;
   // Find maximum score in DAG.
-  double GetMaxScore() const {
-    double max = -INFINITY;
-    for (const auto &[nni, score] : GetScoredNNIs()) {
-      std::ignore = nni;
-      if (max < score) {
-        max = score;
-      }
-    }
-    return max;
-  }
+  double GetMaxScore() const;
   // Find minimum score in DAG.
-  double GetMinScore() const {
-    double min = INFINITY;
-    for (const auto &[nni, score] : GetScoredNNIs()) {
-      std::ignore = nni;
-      if (min > score) {
-        min = score;
-      }
-    }
-    return min;
-  }
+  double GetMinScore() const;
 
+  // Determines whether to optimize edges on initialization.
+  bool IsOptimizeOnInit() const { return optimize_on_init_; }
+  void SetOptimizeOnInit(const bool optimize_on_init) {
+    optimize_on_init_ = optimize_on_init;
+  }
   // Determines whether new edges are optimized.
   bool IsOptimizeNewEdges() const { return optimize_new_edges_; }
   void SetOptimizeNewEdges(const bool optimize_new_edges) {
@@ -161,6 +133,24 @@ class NNIEvalEngine {
   }
 
  protected:
+  // Get reference NNIEngine.
+  NNIEngine &GetNNIEngine() {
+    Assert(nni_engine_ != nullptr, "NNIEngine is not set.");
+    return *nni_engine_;
+  }
+  // Get reference DAG.
+  GPDAG &GetDAG() {
+    Assert(dag_ != nullptr, "DAG is not set.");
+    return *dag_;
+  }
+  // Get reference GraftDAG.
+  GraftDAG &GetGraftDAG() {
+    Assert(graft_dag_ != nullptr, "GraftDAG is not set.");
+    return *graft_dag_;
+  }
+  // Get all Scored NNIs.
+  NNIDoubleMap &GetScoredNNIs() { return scored_nnis_; }
+
   // Un-owned reference to NNIEngine.
   NNIEngine *nni_engine_ = nullptr;
   // Un-owned reference to DAG.
@@ -170,16 +160,18 @@ class NNIEvalEngine {
   // Scored NNIs.
   NNIDoubleMap scored_nnis_;
 
-  // Determines if new branches are initialized by referencing pre-NNI lengths.
+  // Whether to optimize all edges in DAG on initialization.
+  bool optimize_on_init_ = true;
+  // Whether new branches are initialized by referencing pre-NNI lengths.
   bool copy_new_edges_ = true;
-  // Determines whether new branches are optimized.
+  // Whether new branches are optimized.
   bool optimize_new_edges_ = false;
   // Number of optimization iterations.
   size_t optimize_max_iter_ = 10;
 };
 
 // NNIEngine helper for evaluating NNIs by using Generalized Pruning.  Calls GPEngine
-// for functionality.  See GPEngine header for more details.
+// for functionality.  See gp_engine.hpp for more details.
 class NNIEvalEngineViaGP : public NNIEvalEngine {
  public:
   NNIEvalEngineViaGP(NNIEngine &nni_engine, GPEngine &gp_engine);
@@ -187,33 +179,36 @@ class NNIEvalEngineViaGP : public NNIEvalEngine {
   // ** Maintenance
 
   // Initialize EvalEngine.
-  virtual void Init();
+  void Init() override;
   // Prepare EvalEngine for NNIEngine loop.
-  virtual void Prep();
+  void Prep() override;
   // Resize EvalEngine for modified DAG.
-  virtual void GrowEngineForDAG(std::optional<Reindexer> node_reindexer,
-                                std::optional<Reindexer> edge_reindexer);
+  void GrowEngineForDAG(std::optional<Reindexer> node_reindexer,
+                        std::optional<Reindexer> edge_reindexer) override;
   // Fetches Pre-NNI data to prep Post-NNI for score computation. Method stores
   // intermediate values in the GPEngine temp space (expects GPEngine has already been
   // resized).
-  virtual void GrowEngineForAdjacentNNIs(const NNISet &adjacent_nnis,
-                                         const bool via_reference = true,
-                                         const bool use_unique_temps = true);
+  void GrowEngineForAdjacentNNIs(const NNISet &adjacent_nnis,
+                                 const bool via_reference = true,
+                                 const bool use_unique_temps = true) override;
   // Update engine after modifying DAG (adding nodes and edges).
   virtual void UpdateEngineAfterModifyingDAG(
       const std::map<NNIOperation, NNIOperation> &pre_nni_to_nni,
       const size_t prev_node_count, const Reindexer &node_reindexer,
       const size_t prev_edge_count, const Reindexer &edge_reindexer);
+
+  // ** Scoring
+
   // Compute scores for all NNIs adjacent to current DAG.
-  virtual void ScoreAdjacentNNIs(const NNISet &adjacent_nnis);
+  void ScoreAdjacentNNIs(const NNISet &adjacent_nnis) override;
   // Score NNI currently in DAG. Expects engine has been prepped and updated after
   // modifying DAG.
-  virtual double ScoreInternalNNIByNNI(const NNIOperation &nni) const;
-  virtual double ScoreInternalNNIByEdge(const EdgeId &edge_id) const;
+  double ScoreInternalNNIByNNI(const NNIOperation &nni) const override;
+  double ScoreInternalNNIByEdge(const EdgeId &edge_id) const override;
   // Get the number of spare nodes needed per proposed NNI.
-  virtual size_t GetSpareNodesPerNNI() const;
+  size_t GetSpareNodesPerNNI() const override;
   // Get the number of spare edges needed per proposed NNI.
-  virtual size_t GetSpareEdgesPerNNI() const;
+  size_t GetSpareEdgesPerNNI() const override;
 
   // ** Helpers
 
@@ -333,40 +328,45 @@ class NNIEvalEngineViaGP : public NNIEvalEngine {
 };
 
 // NNIEngine helper for evaluating NNIs by using Top Pruning.  Calls TPEngine
-// for functionality.  See TPEngine header for more details.
+// for functionality.  See tp_engine.hpp for more details.
 class NNIEvalEngineViaTP : public NNIEvalEngine {
  public:
   NNIEvalEngineViaTP(NNIEngine &nni_engine, TPEngine &tp_engine)
       : NNIEvalEngine(nni_engine), tp_engine_(&tp_engine) {}
 
+  // ** Maintenance
+
   // Initialize Evaluation Engine.
-  virtual void Init();
+  void Init() override;
   // Prepare Engine for NNI Engine loop.
-  virtual void Prep();
+  void Prep() override;
   // Resize Engine for modified DAG.
-  virtual void GrowEngineForDAG(std::optional<Reindexer> node_reindexer,
-                                std::optional<Reindexer> edge_reindexer);
+  void GrowEngineForDAG(std::optional<Reindexer> node_reindexer,
+                        std::optional<Reindexer> edge_reindexer) override;
   // Fetches Pre-NNI data to prep Post-NNI for likelihood computation. Method stores
   // intermediate values in the GPEngine temp space (expects GPEngine has already been
   // resized).
-  virtual void GrowEngineForAdjacentNNIs(const NNISet &adjacent_nnis,
-                                         const bool via_reference = true,
-                                         const bool use_unique_temps = true);
+  void GrowEngineForAdjacentNNIs(const NNISet &adjacent_nnis,
+                                 const bool via_reference = true,
+                                 const bool use_unique_temps = true) override;
   // Update engine after modifying DAG (adding nodes and edges).
-  virtual void UpdateEngineAfterModifyingDAG(
+  void UpdateEngineAfterModifyingDAG(
       const std::map<NNIOperation, NNIOperation> &pre_nni_to_nni,
       const size_t prev_node_count, const Reindexer &node_reindexer,
-      const size_t prev_edge_count, const Reindexer &edge_reindexer);
+      const size_t prev_edge_count, const Reindexer &edge_reindexer) override;
+
+  // ** Scoring
+
   // Compute scores for all NNIs adjacent to current DAG.
-  virtual void ScoreAdjacentNNIs(const NNISet &adjacent_nnis);
+  void ScoreAdjacentNNIs(const NNISet &adjacent_nnis) override;
   // Score NNI currently in DAG. Expects engine has been prepped and updated after
   // modifying DAG.
-  virtual double ScoreInternalNNIByNNI(const NNIOperation &nni) const;
-  virtual double ScoreInternalNNIByEdge(const EdgeId &edge_id) const;
+  double ScoreInternalNNIByNNI(const NNIOperation &nni) const override;
+  double ScoreInternalNNIByEdge(const EdgeId &edge_id) const override;
   // Get the number of spare nodes needed per proposed NNI.
-  virtual size_t GetSpareNodesPerNNI() const;
+  size_t GetSpareNodesPerNNI() const override;
   // Get the number of spare edges needed per proposed NNI.
-  virtual size_t GetSpareEdgesPerNNI() const;
+  size_t GetSpareEdgesPerNNI() const override;
 
   // ** Access
 

@@ -21,6 +21,7 @@
 #include <unordered_set>
 #include <vector>
 #include <type_traits>
+#include <iterator>
 
 // ** Strongly Typed Wrappers
 
@@ -142,6 +143,14 @@ class EnumArray {
   void fill(DataType fill_value) { array_.fill(fill_value); }
   int size() const { return array_.size(); }
 
+  auto begin() const { return std::begin(array_); }
+  auto end() const { return std::end(array_); }
+
+  friend std::ostream &operator<<(std::ostream &os, const EnumArray &array) {
+    os << array.array_;
+    return os;
+  }
+
  private:
   std::array<DataType, EnumCount> array_;
 };
@@ -154,7 +163,6 @@ class EnumWrapper {
  public:
   using Type = EnumType;
   using Iterator = EnumIterator<EnumType, FirstEnum, LastEnum>;
-
   template <class DataType>
   using Array = EnumArray<EnumType, EnumCount, DataType>;
 

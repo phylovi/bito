@@ -27,6 +27,52 @@
 class TPEngine;
 using BitsetEdgeIdMap = std::unordered_map<Bitset, EdgeId>;
 
+struct LocalPVIds {
+  PVId grandparent_rhat_;
+  PVId grandparent_rfocal_;
+  PVId grandparent_rsister_;
+
+  PVId parent_p_;
+  PVId parent_phatfocal_;
+  PVId parent_phatsister_;
+  PVId parent_rhat_;
+  PVId parent_rfocal_;
+  PVId parent_rsister_;
+
+  PVId child_p_;
+  PVId child_phatleft_;
+  PVId child_phatright_;
+  PVId child_rhat_;
+  PVId child_rleft_;
+  PVId child_rright_;
+
+  PVId sister_p_;
+  PVId leftchild_p_;
+  PVId rightchild_p_;
+};
+
+// Compiles all data about proposed NNI needed for computing score.
+// "refs" contain the data derived from the pre-NNI remapped to be referenced (not
+// modified) for computations. "temps" contain temporary data locations for performing
+// computations. "adjs" contains data actually adjacent to proposed NNI.
+struct ProposedNNIInfo {
+  NNIOperation post_nni;
+  NNIOperation pre_nni;
+
+  LocalPVIds temp_pv_ids;
+  NNIAdjEdgeIds temp_edge_ids;
+
+  LocalPVIds ref_pv_ids;
+  NNIAdjacentMap<PVId> ref_primary_pv_ids;
+  NNIAdjEdgeIds ref_edge_ids;
+  NNIAdjNodeIds ref_node_ids;
+
+  NNIAdjEdgeIds adj_edge_ids;
+  NNIAdjPCSPs adj_pcsps;
+
+  NNIAdjBools do_optimize_edge;
+};
+
 // TPEngine helper for evaluating Top Trees.
 class TPEvalEngine {
  public:
@@ -48,7 +94,8 @@ class TPEvalEngine {
       const size_t prev_edge_count, const Reindexer &edge_reindexer) = 0;
   // Computes scores. Call after Initialize or any Update steps, and before
   // GetTopTreeScores.
-  virtual void ComputeScores() = 0;
+  virtual void ComputeScores(
+      std::optional<EdgeIdVector> opt_edge_ids = std::nullopt) = 0;
 
   // ** Scoring
 
@@ -144,7 +191,7 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
       const size_t prev_edge_count, const Reindexer &edge_reindexer) override;
   // Computes scores. Call after Initialize or any Update steps, and before
   // GetTopTreeScores.
-  void ComputeScores() override;
+  void ComputeScores(std::optional<EdgeIdVector> opt_edge_ids = std::nullopt) override;
 
   // ** Scoring
 
@@ -155,6 +202,19 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
       const NNIOperation &post_nni, const NNIOperation &pre_nni,
       const size_t spare_offset = 0,
       std::optional<BitsetEdgeIdMap> best_edge_map = std::nullopt) override;
+
+  // ** Scoring Helpers
+
+  // Get NNI info for proposed NNI not in DAG.
+  ProposedNNIInfo GetProposedNNIInfo(
+      const NNIOperation &post_nni, const NNIOperation &pre_nni,
+      const size_t spare_offset = 0,
+      std::optional<BitsetEdgeIdMap> best_edge_map = std::nullopt) const;
+  // Get NNI info for NNI in DAG.
+  ProposedNNIInfo GetRealNNIInfo(
+      const NNIOperation &post_nni, const NNIOperation &pre_nni,
+      const size_t spare_offset = 0,
+      std::optional<BitsetEdgeIdMap> best_edge_map = std::nullopt) const;
 
   // ** Resize
 
@@ -185,7 +245,7 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   void GrowSpareEdgeData(const size_t new_edge_spare_count) override;
 
   // Copy all edge data from its pre_edge_id to post_edge_id.
-  void CopyEdgeData(const EdgeId src_edge_id, const EdgeId dest_edge_id) override;
+  void CopyEdgeData(const EdgeId src_edge_id, const EdgeId dest_edge_0id) override;
 
   // ** Populate PVs
 
@@ -211,22 +271,12 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
                                 const bool check_branch_convergence,
                                 const bool update_only = false);
 
-  // Optimization count.
+  // ** Access
+
   size_t GetOptimizationCount() { return branch_handler_.GetOptimizationCount(); }
   bool IsFirstOptimization() { return branch_handler_.IsFirstOptimization(); }
   void IncrementOptimizationCount() { branch_handler_.IncrementOptimizationCount(); }
   void ResetOptimizationCount() { branch_handler_.ResetOptimizationCount(); }
-
-  size_t IsOptimizeNewEdges() const { return optimize_new_edges_; }
-  void SetOptimizeNewEdges(const bool optimize_new_edges) {
-    optimize_new_edges_ = optimize_new_edges;
-  }
-  size_t GetOptimizationMaxIteration() const { return optimize_max_iter_; }
-  void SetOptimizationMaxIteration(const size_t optimize_max_iter) {
-    optimize_max_iter_ = optimize_max_iter;
-  }
-
-  // ** Access
 
   PLVEdgeHandler &GetPVs() { return likelihood_pvs_; }
   const PLVEdgeHandler &GetPVs() const { return likelihood_pvs_; }
@@ -235,84 +285,60 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   DAGBranchHandler &GetDAGBranchHandler() { return branch_handler_; }
   const DAGBranchHandler &GetDAGBranchHandler() const { return branch_handler_; }
 
+  // ** Settings
+
+  size_t IsOptimizeNewEdges() const { return do_optimize_new_edges_; }
+  void SetOptimizeNewEdges(const bool do_optimize_new_edges) {
+    do_optimize_new_edges_ = do_optimize_new_edges;
+  }
+  size_t GetOptimizationMaxIteration() const { return optimize_max_iter_; }
+  void SetOptimizationMaxIteration(const size_t optimize_max_iter) {
+    optimize_max_iter_ = optimize_max_iter;
+  }
+
+  bool IsInitProposedBranchLengthsWithDAG() const {
+    return do_init_proposed_branch_lengths_with_dag_;
+  }
+  void SetInitProposedBranchLengthsWithDAG(
+      const bool do_init_proposed_branch_lengths_with_dag) {
+    do_init_proposed_branch_lengths_with_dag_ =
+        do_init_proposed_branch_lengths_with_dag;
+  }
+  bool IsFixProposedBranchLengthsFromDAG() const {
+    return do_fix_proposed_branch_lengths_from_dag_;
+  }
+  void SetFixProposedBranchLengthsFromDAG(
+      const bool do_fix_proposed_branch_lengths_from_dag) {
+    do_fix_proposed_branch_lengths_from_dag_ = do_fix_proposed_branch_lengths_from_dag;
+  }
+
   // ** PV Operations
-
-  struct NNIEdgeIdMap {
-    EdgeId central_edge_;
-    EdgeId parent_edge_;
-    EdgeId sister_edge_;
-    EdgeId left_child_edge_;
-    EdgeId right_child_edge_;
-  };
-  struct PrimaryPVIds {
-    // For central likelihood.
-    PVId parent_rfocal_;
-    PVId child_p_;
-    // For custom branch lengths.
-    PVId child_phatleft_;
-    PVId child_phatright_;
-    PVId parent_phatsister_;
-    PVId parent_rhat_;
-    PVId grandparent_rfocal_;
-    // For branch length optimization.
-    PVId child_rhat_;
-    PVId child_rleft_;
-    PVId child_rright_;
-    PVId parent_phatfocal_;
-    PVId parent_rsister_;
-    PVId parent_p_;
-    PVId grandparent_phatfocal_;
-    PVId grandparent_p_;
-  };
-  struct SecondaryPVIds {
-    PVId grandparent_rhat_;
-    PVId grandparent_rfocal_;
-    PVId grandparent_rsister_;
-
-    PVId parent_rfocal_;
-    PVId parent_rsister_;
-    PVId child_rleft_;
-    PVId child_rright_;
-
-    PVId parent_p_;
-    PVId sister_p_;
-    PVId leftchild_p_;
-    PVId rightchild_p_;
-
-    PVId parent_phatfocal_;
-    PVId parent_phatsister_;
-    PVId parent_rhat_;
-    PVId child_p_;
-    PVId child_phatleft_;
-    PVId child_phatright_;
-    PVId child_rhat_;
-  };
 
   // Get primary PV Ids for corresponding parent/child pair.
   // Gets the P-PV of the child, and the RFocal-PV of the parent.
   // The expected PVs for computing likelihoods.
   std::pair<PVId, PVId> GetPrimaryPVIdsOfEdge(const EdgeId edge_id) const;
-  // Get secondary PV Ids for corresponding parent/child pair.
+  // Get PV Ids for corresponding parent/child pair.
   // Gets the PHatLeft-PV and PHatRight-PV of child, and the the PSister-PV and R-PVs of
   // parent.
   // The expected PVs for computing temp intermediate PVs for proposed NNIs.
-  SecondaryPVIds GetSecondaryPVIdsOfEdge(const EdgeId edge_id) const;
+  LocalPVIds GetLocalPVIdsOfEdge(const EdgeId edge_id) const;
   // Remaps secondary PV Ids according to the clade map.
-  SecondaryPVIds RemapSecondaryPVIdsForPostNNI(
-      const SecondaryPVIds &pre_pvids,
-      const NNIOperation::NNICladeArray &clade_map) const;
+  LocalPVIds RemapLocalPVIdsForPostNNI(
+      const LocalPVIds &pre_pv_ids, const NNIOperation::NNICladeArray &clade_map) const;
 
   // Get temporary PV Ids for intermediate proposed NNI computations.
-  PrimaryPVIds GetTempPrimaryPVIdsForProposedNNIs(const size_t spare_offset) const;
+  LocalPVIds GetTempLocalPVIdsForProposedNNIs(const size_t spare_offset) const;
   // Get temporary PV Ids for intermediate proposed NNI computations.
-  NNIEdgeIdMap GetTempEdgeIdsForProposedNNIs(const size_t spare_offset) const;
+  NNIAdjEdgeIds GetTempEdgeIdsForProposedNNIs(const size_t spare_offset) const;
 
   // ** Scoring Helpers
 
   // Set the P-PVs to match the observed site patterns at the leaves.
   void PopulateLeafPVsWithSitePatterns();
   // Set the R-PVs to the stationary distribution at the root and rootsplits.
-  void PopulateRootPVsWithStationaryDistribution();
+  void PopulateRootPVsWithStationaryDistribution(
+      std::optional<EdgeIdVector> opt_edge_ids = std::nullopt);
   // Updates the rootward P-PVs for given node or edge.
   void PopulateRootwardPVForNode(const NodeId node_id);
   void PopulateRootwardPVForEdge(const EdgeId edge_id);
@@ -405,19 +431,24 @@ class TPEvalEngineViaLikelihood : public TPEvalEngine {
   // Branch length parameters for DAG.
   DAGBranchHandler branch_handler_;
 
-  // Determines whether new edges are optimized.
-  bool optimize_new_edges_ = true;
+  // Whether new edges are optimized.
+  bool do_optimize_new_edges_ = true;
+  // Whether to referehce DAG to initialize branch lengths (otherwise use default).
+  bool do_init_proposed_branch_lengths_with_dag_ = true;
+  // Whether to fix branch lengths contained in DAG or optimize them.
+  bool do_fix_proposed_branch_lengths_from_dag_ = true;
   // Number of optimization iterations.
   size_t optimize_max_iter_ = 5;
+
   // Temporary map of optimized edge lengths.
-  std::map<Bitset, double> tmp_optimized_edges;
+  std::map<Bitset, double> tmp_branch_lengths_;
 
   // Number of pvs to allocate per node in DAG.
   static constexpr size_t pv_count_per_node_ = PLVTypeEnum::Count;
   // Number of spare nodes needed to be allocated per proposed NNI.
-  static constexpr size_t spare_nodes_per_nni_ = 15;
+  static constexpr size_t spare_nodes_per_nni_ = 12;
   // Number of spare edges needed to be allocated per proposed NNI.
-  static constexpr size_t spare_edges_per_nni_ = 6;
+  static constexpr size_t spare_edges_per_nni_ = 5;
 
   // ** Substitution Model
   // When we change from JC69Model, check that we are actually doing transpose in
@@ -465,7 +496,7 @@ class TPEvalEngineViaParsimony : public TPEvalEngine {
       const size_t prev_edge_count, const Reindexer &edge_reindexer) override;
   // Computes scores. Call after Initialize or any Update steps, and before
   // GetTopTreeScores.
-  void ComputeScores() override;
+  void ComputeScores(std::optional<EdgeIdVector> opt_edge_ids = std::nullopt) override;
 
   // ** Scoring
 

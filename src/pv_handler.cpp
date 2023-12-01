@@ -36,7 +36,8 @@ template <class PVTypeEnum, class DAGElementId>
 void PartialVectorHandler<PVTypeEnum, DAGElementId>::Reindex(
     const Reindexer pv_reindexer) {
   ReindexViaRemap(pv_reindexer);
-  if (!(pv_reindexer.size() < (reindexer_init_size_ * 1.5)) or !use_remapping_) {
+  if (!(pv_reindexer.size() < (reindexer_init_size_ * reindex_ratio)) or
+      !use_remapping_) {
     ReindexViaMoveCopy(pv_reindexer);
   }
 }

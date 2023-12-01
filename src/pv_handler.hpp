@@ -111,6 +111,7 @@ class PartialVectorHandler {
  public:
   using TypeEnum = PVTypeEnum;
   using PVType = typename TypeEnum::Type;
+  using PVIdArray = typename TypeEnum::template Array<PVId>;
 
   PartialVectorHandler(const std::string &mmap_file_path, const size_t elem_count,
                        const size_t pattern_count, const double resizing_factor = 2.0)
@@ -236,18 +237,19 @@ class PartialVectorHandler {
     return GetSparePVIndex(spare_pv_id);
   }
 
-  // Get vector of all node ids for given node.
-  static PVIdVector GetPVIndexVectorForElementId(const DAGElementId elem_id,
-                                                 const size_t elem_count) {
-    PVIdVector pv_ids;
-    for (const auto pv_type : typename TypeEnum::Iterator()) {
-      pv_ids.push_back(GetPVIndex(pv_type, elem_id, elem_count));
-    }
-    return pv_ids;
-  }
-
   // PV Reindexer, which serves as the data map to sort PV data.
   const Reindexer &GetPVReindexer() const { return pv_reindexer_; }
+  // Get array of all pv_ids for given node.
+  PVIdArray GetPVIdArray(const DAGElementId elem_id) const {
+    PVIdArray pv_array;
+    for (auto pv_type : typename PVTypeEnum::Iterator()) {
+      pv_array[pv_type] = GetPVIndex(pv_type, elem_id);
+    }
+    return pv_array;
+  }
+
+  void SetUseRemapping(bool use_remapping) { use_remapping_ = use_remapping; }
+  bool GetUseRemapping() const { return use_remapping_; }
 
   // ** PV Operations
 
@@ -365,6 +367,9 @@ class PartialVectorHandler {
     return MaxDifference(pv_a, pv_b);
   }
 
+  double Min(const PVId pvid) const { return GetPV(pvid).minCoeff(); }
+  double Max(const PVId pvid) const { return GetPV(pvid).maxCoeff(); }
+
   // ** I/O
 
   // Output data to string.
@@ -388,7 +393,24 @@ class PartialVectorHandler {
     out << ToString(GetPV(pv_type, elem_id));
     return out.str();
   }
-  std::string ToString(const NucleotidePLVRef &pv) const {
+  std::string AllPVsToString(const bool show_labels = false) const {
+    std::stringstream out;
+    for (const auto pv_type : typename PVTypeEnum::Iterator()) {
+      for (DAGElementId elem_id = 0; elem_id < GetCount(); elem_id++) {
+        out << ToString(pv_type, elem_id, show_labels);
+      }
+    }
+    return out.str();
+  }
+  size_t ToHash(const PVId pv_id) const { return ToHash(GetPV(pv_id)); }
+  std::string ToHashString(const PVId pv_id, const size_t length = 16) const {
+    return ToHashString(GetPV(pv_id), length);
+  }
+  DoubleVector ToDoubleVector(const PVId pv_id) const {
+    return ToDoubleVector(GetPV(pv_id));
+  }
+
+  static std::string ToString(const NucleotidePLVRef &pv) {
     std::stringstream out;
     for (int i = 0; i < pv.rows(); i++) {
       out << "[";
@@ -399,14 +421,27 @@ class PartialVectorHandler {
     }
     return out.str();
   }
-  std::string AllPVsToString(const bool show_labels = false) const {
-    std::stringstream out;
-    for (const auto pv_type : typename PVTypeEnum::Iterator()) {
-      for (DAGElementId elem_id = 0; elem_id < GetCount(); elem_id++) {
-        out << ToString(pv_type, elem_id, show_labels);
+  static size_t ToHash(const NucleotidePLVRef &pv) {
+    size_t seed = pv.rows() * pv.cols();
+    for (int i = 0; i < pv.rows(); i++) {
+      for (int j = 0; j < pv.cols(); j++) {
+        seed ^= std::hash<double>()(pv(i, j)) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
       }
     }
-    return out.str();
+    return seed;
+  }
+  static std::string ToHashString(const NucleotidePLVRef &pv,
+                                  const size_t length = 16) {
+    return HashToString(ToHash(pv), length);
+  }
+  static DoubleVector ToDoubleVector(const NucleotidePLVRef &pv) {
+    DoubleVector values;
+    for (int i = 0; i < pv.rows(); i++) {
+      for (int j = 0; j < pv.cols(); j++) {
+        values.push_back(pv(i, j));
+      }
+    }
+    return values;
   }
 
   // ** Miscellaneous
@@ -421,9 +456,6 @@ class PartialVectorHandler {
     }
     return pvid_map;
   }
-
-  void SetUseRemapping(bool use_remapping) { use_remapping_ = use_remapping; }
-  bool GetUseRemapping() const { return use_remapping_; }
 
   static int Compare(const PartialVectorHandler<PVTypeEnum, DAGElementId> &pv_lhs,
                      const PartialVectorHandler<PVTypeEnum, DAGElementId> &pv_rhs,
@@ -501,6 +533,7 @@ class PartialVectorHandler {
   size_t reindexer_init_size_ = 0;
   // Whether to use remapping to reindex PLVs, otherwise only use
   bool use_remapping_ = true;
+  double reindex_ratio = 10;
 };
 
 // PLVHandler: Partial Likelihood Vector Handler

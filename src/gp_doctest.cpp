@@ -1619,23 +1619,14 @@ TEST_CASE("NNIEngine: GraftDAG") {
       continue;
     }
     size_t neighbor_count = 0;
-    for (const auto is_parent : {true, false}) {
-      const auto& subsplit = (is_parent ? nni.parent_ : nni.child_);
-      const auto node_id = graft_dag.GetDAGNodeId(subsplit);
+    for (const auto subsplit : {nni.GetParent(), nni.GetChild()}) {
+      const auto& node_id = graft_dag.GetDAGNodeId(subsplit);
       const auto& node = graft_dag.GetDAGNode(node_id);
-      for (const auto direction : {true, false}) {
-        for (const auto clade : {true, false}) {
-          const auto neighbors = node.GetEdge(direction, clade);
-          for (const auto neighbor_id : neighbors) {
-            const auto parent_id = NodeId(is_parent ? node_id : neighbor_id);
-            const auto child_id = NodeId(is_parent ? neighbor_id : node_id);
-            CHECK_MESSAGE(graft_dag.ContainsEdge(parent_id, child_id),
-                          "Cannot find edge in GraftDAG.");
-            CHECK_MESSAGE(graft_dag.ContainsEdge(child_id, parent_id),
-                          "Cannot find edge in GraftDAG.");
-            neighbor_count++;
-          }
-        }
+      const auto& node_view = node.GetNeighbors();
+      for (auto it = node_view.begin(); it != node_view.end(); ++it) {
+        CHECK_MESSAGE(graft_dag.ContainsEdge(it.GetParentId(), it.GetChildId()),
+                      "Cannot find edge in GraftDAG.");
+        neighbor_count++;
       }
     }
     if (neighbor_count < 6) {
@@ -1858,7 +1849,7 @@ TEST_CASE("NNIEngine: Resize and Reindex GPEngine after AddNodePair") {
               Reindexer::IdentityReindexer(dag.EdgeCountWithLeafSubsplits());
         }
       }
-      nni_engine.ResetAllNNIs();
+      nni_engine.ResetNNIData();
       nni_engine.SyncAdjacentNNIsWithDAG();
       nni_count = nni_engine.GetAdjacentNNICount();
 
@@ -2108,6 +2099,10 @@ TEST_CASE("NNIEngine via GPEngine: Proposed NNI vs DAG NNI GPLikelihoods") {
           const auto prenni_graft = prenni_graftdag_likelihoods.at(pre_nni);
           const auto diff = std::abs(prenni_truth - prenni_graft);
           const auto passes_current_test = (diff < tolerance);
+          if (!passes_current_test) {
+            std::cout << "Pre NNI: FAIL -- " << prenni_truth << " " << prenni_graft
+                      << std::endl;
+          }
           passes_test = (passes_test & passes_current_test);
           CHECK_MESSAGE(diff < tolerance,
                         "Pre-NNI Likelihood from NNI Engine does not match truth.");
@@ -2121,7 +2116,8 @@ TEST_CASE("NNIEngine via GPEngine: Proposed NNI vs DAG NNI GPLikelihoods") {
           const auto diff = std::abs(nni_truth - nni_graft);
           const auto passes_current_test = (diff < tolerance);
           if (!passes_current_test) {
-            std::cout << "FAIL " << nni_truth << " " << nni_graft << std::endl;
+            std::cout << "Added NNI: FAIL -- " << nni_truth << " " << nni_graft
+                      << std::endl;
           }
           passes_test = (passes_test & passes_current_test);
           CHECK_MESSAGE(diff < tolerance,
@@ -2174,8 +2170,7 @@ TEST_CASE("NNIEngine: Finding Parent and Child Nodes After Adding/Grafting Nodes
   auto& nniengine_1 = inst_1.GetNNIEngine();
   auto& graftdag_1 = nniengine_1.GetGraftDAG();
   nniengine_1.SetTPLikelihoodCutoffFilteringScheme(0.0);
-  nniengine_1.SetTopNScoreFilteringScheme(2);
-  // nniengine_1.SetNoFilter();
+  nniengine_1.SetTopKScoreFilteringScheme(2);
   nniengine_1.RunInit();
 
   auto VectorToSet = [](const std::pair<NodeIdVector, NodeIdVector>& node_id_vector)
@@ -2277,10 +2272,10 @@ TEST_CASE("NNIEngine: Finding Parent and Child Nodes After Adding/Grafting Nodes
           "Finding nodes via map does not match finding nodes via scan (before "
           "adding NNIs).");
     }
-    nniengine_1.FilterPreUpdate();
+    nniengine_1.FilterPreScore();
+    nniengine_1.FilterScoreAdjacentNNIs();
+    nniengine_1.FilterPostScore();
     nniengine_1.FilterEvaluateAdjacentNNIs();
-    nniengine_1.FilterPostUpdate();
-    nniengine_1.FilterProcessAdjacentNNIs();
     nniengine_1.RemoveAllGraftedNNIsFromDAG();
     nniengine_1.AddAcceptedNNIsToDAG();
     for (NodeId node_id{0}; node_id < dag_1.NodeCount(); node_id++) {
@@ -2434,8 +2429,8 @@ EdgeScoreMap BuildProposedEdgeTPScoreMapFromInstance(
     auto& llh_engine = tpengine.GetLikelihoodEvalEngine();
     llh_engine.Initialize();
     llh_engine.ComputeScores();
-    auto best_edge_map =
-        tpengine.BuildBestEdgeMapOverNNIs(nni_engine.GetAdjacentNNIs());
+    auto best_edge_map = tpengine.BuildMapOfProposedNNIPCSPsToBestPreNNIEdges(
+        nni_engine.GetAdjacentNNIs());
     for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
       const auto pre_nni = tpengine.FindHighestPriorityNeighborNNIInDAG(nni);
       const auto post_edge_id = post_dag.GetEdgeIdx(nni);
@@ -2976,26 +2971,30 @@ TEST_CASE("TPEngine: TPEngine Parsimony scores vs SankoffHandler Parsimony score
 // generate the same result from adding NNIs to the DAG and updating as we do from
 // using the pre-NNI computation.
 TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
-  bool print_failures = false;
+  bool do_print_all = false;
+  const double tol = 1e-5;
   // Build NNIEngine from DAG that does not include NNIs. Compute likelihoods.
   auto CompareProposedNNIvsDAGNNIvsBEAGLE =
-      [print_failures](const std::string& fasta_path, const std::string& newick_path,
-                       const bool optimize_branch_lengths = true,
-                       const bool take_first_branch_lengths = true) {
+      [do_print_all, tol](const std::string& fasta_path, const std::string& newick_path,
+                          const bool optimize_branch_lengths = true,
+                          const bool take_first_branch_lengths = true) {
         bool test_passes = true;
-        const double tol = 1e-5;
         // Instance for computing proposed scores.
         auto inst_1 = MakeGPInstanceWithTPEngine(fasta_path, newick_path,
                                                  "_ignore/mmapped_pv.1.data");
         // Instance for computing internal DAG scores for comparison.
         auto inst_2 = MakeGPInstanceWithTPEngine(fasta_path, newick_path,
                                                  "_ignore/mmapped_pv.2.data");
-
+        auto& nniengine_1 = inst_1.GetNNIEngine();
         auto& dag_2 = inst_2.GetDAG();
-        auto& nni_engine_2 = inst_2.GetNNIEngine();
+        auto& nniengine_2 = inst_2.GetNNIEngine();
         auto& tpengine_2 = inst_2.GetTPEngine();
-
-        // Add all NNIs to post-DAG.
+        // Set nni engine to use TP likelihoods.
+        nniengine_1.SetTPLikelihoodCutoffFilteringScheme(0.0);
+        nniengine_1.SetNoFilter(true);
+        nniengine_2.SetTPLikelihoodCutoffFilteringScheme(0.0);
+        nniengine_2.SetNoFilter(true);
+        // Copy branch lengths from input trees.
         if (take_first_branch_lengths) {
           inst_1.TPEngineSetBranchLengthsByTakingFirst();
           inst_2.TPEngineSetBranchLengthsByTakingFirst();
@@ -3009,31 +3008,31 @@ TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
         inst_1.GetTPEngine().GetLikelihoodEvalEngine().SetOptimizationMaxIteration(1);
         inst_2.GetTPEngine().GetLikelihoodEvalEngine().SetOptimizationMaxIteration(1);
 
-        nni_engine_2.SetNoFilter(true);
-        nni_engine_2.RunInit(true);
+        // Add all NNIs to DAG.
+        nniengine_2.SetNoFilter(true);
+        nniengine_2.RunInit(true);
         CHECK_MESSAGE(tpengine_2.GetChoiceMap().SelectionIsValid(false),
                       "ChoiceMap is not valid before adding NNIs.");
-        nni_engine_2.RunMainLoop(true);
-        nni_engine_2.RunPostLoop(true);
+        nniengine_2.RunMainLoop(true);
+        nniengine_2.RunPostLoop(true);
         CHECK_MESSAGE(tpengine_2.GetChoiceMap().SelectionIsValid(false),
                       "ChoiceMap is not valid after adding NNIs.");
 
         // Report all NNIs.
-        auto& nni_engine = inst_1.GetNNIEngine();
-        nni_engine.SyncAdjacentNNIsWithDAG();
+        nniengine_1.SyncAdjacentNNIsWithDAG();
 
-        // Likelihoods and Parsimonies of expanded DAG with proposed NNIs.
+        // Likelihoods of expanded DAG with proposed NNIs.
         auto likelihoods_post = BuildEdgeTPScoreMapFromInstance(
             inst_2, TPEvalEngineType::LikelihoodEvalEngine);
-        // Likelihoods and Parsimonies of base DAG.
+        // Likelihoods of base DAG.
         auto likelihoods_pre = BuildEdgeTPScoreMapFromInstance(
             inst_1, TPEvalEngineType::LikelihoodEvalEngine);
 
-        // Likelihoods and Parsimonies of DAG's adjacent proposed NNIs.
+        // Likelihoods DAG's adjacent proposed NNIs.
         auto likelihoods_proposed = BuildProposedEdgeTPScoreMapFromInstance(
             inst_1, inst_2, TPEvalEngineType::LikelihoodEvalEngine);
 
-        // Compute top tree scores using BEAGLE and Sankoff engines.
+        // Compute top tree scores using BEAGLE engine.
         auto [tree_id_map, edge_id_map] =
             BuildTreeIdMapAndTreeEdgeMapFromGPInstanceAndChoiceMap(inst_2, true);
         auto beagle = BuildEdgeScoreMapFromInstanceUsingBeagleEngine(
@@ -3045,7 +3044,7 @@ TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
         }
 
         // Compare likelihoods by edge_id.
-        for (const auto& nni : nni_engine.GetAdjacentNNIs()) {
+        for (const auto& nni : nniengine_1.GetAdjacentNNIs()) {
           auto edge_id = dag_2.GetEdgeIdx(nni);
           auto score_proposed = likelihoods_proposed[edge_id];
           auto score_dag = likelihoods_post[edge_id];
@@ -3057,16 +3056,15 @@ TEST_CASE("TPEngine: Proposed NNI vs DAG NNI vs BEAGLE Likelihood") {
           test_passes &= matches_score_dag;
           test_passes &= matches_score_tree;
           test_passes &= matches_dag_tree;
-          if (print_failures) {
-            if (!matches_score_dag or !matches_score_tree) {
-              std::cout << "SCORE_FAILED_PROPOSED: " << score_tree << " vs "
-                        << score_proposed << ": " << abs(score_proposed - score_dag)
-                        << std::endl;
-              std::cout << "SCORE_FAILED_SCORE: " << score_tree << " vs " << score_dag
-                        << ": " << abs(score_dag - score_tree) << std::endl;
-            } else {
-              std::cout << "SCORE_PASS: " << score_tree << std::endl;
-            }
+          if (!matches_score_dag or !matches_score_tree) {
+            std::cout << "SCORE_FAILED_NNI: " << nni << std::endl;
+            std::cout << "SCORE_FAILED_PROPOSED: " << score_tree << " vs "
+                      << score_proposed << ": " << std::abs(score_tree - score_proposed)
+                      << std::endl;
+            std::cout << "SCORE_FAILED_DAG: " << score_tree << " vs " << score_dag
+                      << ": " << std::abs(score_tree - score_dag) << std::endl;
+          } else if (do_print_all) {
+            std::cout << "SCORE_PASS: " << score_tree << std::endl;
           }
         }
 
@@ -3162,16 +3160,20 @@ TEST_CASE("TPEngine: Exporting Newicks") {
   const std::string newick_path_1 = "data/five_taxon_rooted.nwk";
   const std::string newick_path_2 = "data/five_taxon_rooted_shuffled.nwk";
 
+  // Build map of trees to tree_id.
   auto BuildTopTreeMapViaBruteForce = [](GPInstance& inst) {
-    std::vector<RootedTree> tree_map;
+    TreeIdTopologyMap tree_map;
+    std::vector<RootedTree> visited_trees;
     for (TreeId tree_id(0); tree_id < inst.GetTPEngine().GetMaxTreeId(); tree_id++) {
       std::vector<RootedTree> temp_trees;
+      // Find all edges that contain the given tree_id.
       for (EdgeId edge_id{0}; edge_id < inst.GetDAG().EdgeCountWithLeafSubsplits();
            edge_id++) {
         if (inst.GetTPEngine().GetTreeSource(edge_id) != tree_id) {
           continue;
         }
         auto tree = inst.GetTPEngine().GetTopTreeWithEdge(edge_id);
+        // Check if the edge's tree topology has already been found for this tree_id.
         bool tree_found = false;
         for (size_t i = 0; i < temp_trees.size(); i++) {
           if (tree == temp_trees[i]) {
@@ -3183,16 +3185,21 @@ TEST_CASE("TPEngine: Exporting Newicks") {
           temp_trees.push_back(tree);
         }
       }
+      // Add tree to map if does not already exist in map.
       for (const auto& tree : temp_trees) {
         bool tree_found = false;
-        for (const auto& old_tree : tree_map) {
-          if (tree == old_tree) {
+        for (const auto& visited_tree : visited_trees) {
+          if (tree == visited_tree) {
             tree_found = true;
             break;
           }
         }
         if (!tree_found) {
-          tree_map.push_back(tree);
+          if (tree_map.find(tree_id) == tree_map.end()) {
+            tree_map[tree_id] = {};
+          }
+          tree_map[tree_id].push_back(tree.Topology());
+          visited_trees.push_back(tree);
         }
       }
     }
@@ -3222,6 +3229,7 @@ TEST_CASE("TPEngine: Exporting Newicks") {
         std::ofstream file_out;
         // Use internal method for building Newick string.
         const std::string temp_newick_path_1 = "_ignore/temp_1.newick";
+        const auto tree_map_1 = inst_1.GetTPEngine().BuildMapOfTreeIdToTopTopologies();
         std::string newick_1 = inst_1.GetTPEngine().ToNewickOfTopTopologies();
         file_out.open(temp_newick_path_1);
         file_out << newick_1 << std::endl;
@@ -3231,16 +3239,42 @@ TEST_CASE("TPEngine: Exporting Newicks") {
         std::string newick_2;
         file_out.open(temp_newick_path_2);
         const auto tree_map_2 = BuildTopTreeMapViaBruteForce(inst_1);
-        for (const auto& tree : tree_map_2) {
-          newick_2 += inst_1.GetDAG().TreeToNewickTopology(tree) + '\n';
-          file_out << inst_1.GetDAG().TreeToNewickTopology(tree) << std::endl;
+        for (const auto& [tree_id, tree_vec] : tree_map_2) {
+          std::ignore = tree_id;
+          for (const auto& tree : tree_vec) {
+            newick_2 += inst_1.GetDAG().TopologyToNewickTopology(tree) + '\n';
+            file_out << inst_1.GetDAG().TopologyToNewickTopology(tree) << std::endl;
+          }
         }
         file_out.close();
         bool newicks_equal = (newick_1 == newick_2);
         if (!newicks_equal) {
           std::cerr << "ERROR: Newicks do not match." << std::endl;
-          std::cerr << "NEWICK_1: " << std::endl << newick_1 << std::endl;
-          std::cerr << "NEWICK_2: " << std::endl << newick_2 << std::endl;
+          // std::cerr << "NEWICK_TEST: " << std::endl << newick_1 << std::endl;
+          // std::cerr << "NEWICK_TRUTH: " << std::endl << newick_2 << std::endl;
+
+          auto TreeIdTopologyMapToString = [&inst_1](const TreeIdTopologyMap& map) {
+            std::stringstream ss;
+            size_t tree_count = 0;
+            for (const auto& [tree_id, tree_vec] : map) {
+              ss << "(" << tree_id << ", [ ";
+              for (const auto& tree : tree_vec) {
+                std::string newick = tree->Newick();
+                size_t hash = std::hash<std::string>{}(newick);
+                const auto& tpengine = inst_1.GetTPEngine();
+                auto tree_ids = tpengine.FindTreeIdsInTreeEdgeVector(
+                    tpengine.BuildSetOfEdgesRepresentingTopology(tree));
+                ss << tree_count++ << " " << HashToString(hash, 5) << " "
+                   << tree->Newick() << " " << tree_ids << " ";
+              }
+              ss << "]), " << std::endl;
+            }
+            return ss.str();
+          };
+          std::cerr << "TREE_MAP_TEST: " << std::endl
+                    << TreeIdTopologyMapToString(tree_map_1) << std::endl;
+          std::cerr << "TREE_MAP_TRUTH: " << std::endl
+                    << TreeIdTopologyMapToString(tree_map_2) << std::endl;
         }
 
         // Build new TPEngine and check that old and new engines are equal.
@@ -3285,7 +3319,7 @@ TEST_CASE("TPEngine: Exporting Newicks") {
   tp_engine.GetLikelihoodEvalEngine().SetOptimizationMaxIteration(5);
   tp_engine.GetLikelihoodEvalEngine().BranchLengthOptimization(false);
   nni_engine.SetTPLikelihoodCutoffFilteringScheme(0.0);
-  nni_engine.SetTopNScoreFilteringScheme(1);
+  nni_engine.SetTopKScoreFilteringScheme(1);
   nni_engine.SetReevaluateRejectedNNIs(true);
   nni_engine.RunInit(true);
 
@@ -3329,7 +3363,7 @@ TEST_CASE("TPEngine: Resize and Reindex PV Handler") {
   auto& pvs_1 = tpengine_1.GetLikelihoodEvalEngine().GetPVs();
   pvs_1.SetUseRemapping(false);
   nniengine_1.SetTPLikelihoodCutoffFilteringScheme(0.0);
-  nniengine_1.SetTopNScoreFilteringScheme(1);
+  nniengine_1.SetTopKScoreFilteringScheme(1);
   nniengine_1.RunInit();
   // NNI Engine that does NOT use remapping for reindexing PVs.
   inst_2.MakeTPEngine();
@@ -3339,7 +3373,7 @@ TEST_CASE("TPEngine: Resize and Reindex PV Handler") {
   auto& pvs_2 = tpengine_2.GetLikelihoodEvalEngine().GetPVs();
   pvs_2.SetUseRemapping(false);
   nniengine_2.SetTPLikelihoodCutoffFilteringScheme(0.0);
-  nniengine_2.SetTopNScoreFilteringScheme(1);
+  nniengine_2.SetTopKScoreFilteringScheme(1);
   nniengine_2.RunInit();
 
   CHECK_MESSAGE(nniengine_1.GetDAG() == nniengine_2.GetDAG(),
