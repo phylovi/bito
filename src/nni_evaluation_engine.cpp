@@ -91,9 +91,8 @@ void NNIEvalEngineViaGP::UpdateEngineAfterModifyingDAG(
     const std::map<NNIOperation, NNIOperation> &pre_nni_to_nni,
     const size_t prev_node_count, const Reindexer &node_reindexer,
     const size_t prev_edge_count, const Reindexer &edge_reindexer) {
+  std::cout << "GPEngine::UpdateEngineAfterModifying [BEGIN]" << std::endl;
   using namespace GPOperations;
-  const bool copy_branch_lengths = false;
-
   auto &branch_handler = GetGPEngine().GetBranchLengthHandler();
   // Find all new edge ids.
   std::set<EdgeId> new_edge_ids;
@@ -110,7 +109,8 @@ void NNIEvalEngineViaGP::UpdateEngineAfterModifyingDAG(
     branch_handler(edge_id) = branch_handler.GetDefaultBranchLength();
   }
   // Copy over branch lengths from pre-NNI to post-NNI.
-  if (copy_branch_lengths) {
+  if (copy_new_edges_) {
+    std::cout << "GPEngine::UpdateEngineAfterModifying [copy new edges]" << std::endl;
     for (const auto &[pre_nni, nni] : pre_nni_to_nni) {
       CopyGPEngineDataAfterAddingNNI(pre_nni, nni);
     }
@@ -132,16 +132,21 @@ void NNIEvalEngineViaGP::UpdateEngineAfterModifyingDAG(
   GetGPEngine().ProcessOperations(GetDAG().PopulatePLVs());
 
   // Optimize branch lengths.
-  if (IsOptimizeNewEdges()) {
-    for (const auto &[pre_nni, nni] : pre_nni_to_nni) {
-      std::ignore = pre_nni;
-      NNIBranchLengthOptimization(nni, new_edge_ids);
-    }
-    GetGPEngine().ProcessOperations(GetDAG().PopulatePLVs());
+  if (optimize_new_edges_) {
+    std::cout << "GPEngine::UpdateEngineAfterModifying [optimize new edges]"
+              << std::endl;
+
+    // for (const auto &[pre_nni, nni] : pre_nni_to_nni) {
+    //   std::ignore = pre_nni;
+    //   NNIBranchLengthOptimization(nni, new_edge_ids);
+    // }
+    // GetGPEngine().ProcessOperations(GetDAG().PopulatePLVs());
+    BranchLengthOptimization();
   }
 
   GetGPEngine().ProcessOperations(GetDAG().ComputeLikelihoods());
   auto likelihoods = GetGPEngine().GetPerGPCSPLogLikelihoods();
+  std::cout << "GPEngine::UpdateEngineAfterModifying [END]" << std::endl;
 }
 
 void NNIEvalEngineViaGP::CopyGPEngineDataAfterAddingNNI(const NNIOperation &pre_nni,
@@ -841,10 +846,11 @@ void NNIEvalEngineViaGP::BranchLengthOptimization() {
 
 void NNIEvalEngineViaGP::BranchLengthOptimization(
     const std::set<EdgeId> &edges_to_optimize) {
-  const auto ops = GetDAG().BranchLengthOptimization(edges_to_optimize);
+  const auto update_ops = GetDAG().PopulatePLVs();
+  const auto optimize_ops = GetDAG().BranchLengthOptimization(edges_to_optimize);
   for (size_t iter = 0; iter < GetOptimizationMaxIteration(); iter++) {
-    GetGPEngine().ProcessOperations(ops);
-    GetGPEngine().ProcessOperations(GetDAG().PopulatePLVs());
+    GetGPEngine().ProcessOperations(optimize_ops);
+    GetGPEngine().ProcessOperations(update_ops);
   }
 }
 

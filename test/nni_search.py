@@ -34,6 +34,7 @@ do_fix_proposed_bls_from_dag = True
 # terminate search when all credible edges found
 do_end_when_all_creds_found = False
 # print data
+do_print_settings = True
 do_print_setup_data = False
 do_print_iter_data = True
 do_print_times = True
@@ -569,6 +570,9 @@ class NNISearchInstance:
         self.nni_engine = None
         self.pp_maps = None
         self.init()
+        pass
+
+    def args_info(self):
         pass
 
     def init(self):
@@ -1120,6 +1124,10 @@ class Program:
         timer = Timer()
         results = Results(args)
 
+        if do_print_settings:
+            print_v("# NNI SEARCH SETTINGS:")
+            print_v(args)
+
         if do_print_setup_data:
             print_v("# load nni_search_instance...")
         nni_inst = NNISearchInstance(args)
@@ -1143,8 +1151,9 @@ class Program:
         results.predata_init(dag, nni_engine, pp_maps)
 
         tracker = Tracker(args, nni_inst.dag_inst)
+        subroutine_names = ["graft_adjacent_nnis_to_dag", "filter_pre_score", "filter_score_adjacent_nnis", "filter_post_score", "filter_evaluate_adjacent_nnis", "remove_all_graft_nnis_from_dag", "add_accepted_nnis_to_dag"]
 
-        # run search
+        ### NNI SEARCH MAIN LOOP ###
         iter_count = 1
         while iter_count <= args.iter_max:
             if do_print_iter_data:
@@ -1155,46 +1164,47 @@ class Program:
             if do_check_for_pv_map_changes:
                 pcsps = dag.build_set_of_edge_bitsets()
 
-            # run iteration of search
+            # capture initial data.
             results.predata_begin_iter(iter_count, dag, nni_engine, pp_maps)
-            if do_print_dag_stats:
-                print_v("# dag:", dag.node_count(), dag.edge_count())
             tree_pp = results.pre_data_['tree_pp']
             tree_pp_total = results.pre_data_['tree_pp_total']
             if do_print_dag_stats:
+                print_v("# dag:", dag.node_count(), dag.edge_count())
                 print_v(f"# dag_tree_pp: {round(tree_pp, digits)} {round((tree_pp/tree_pp_total)*100, 2)}%")
 
+            # nni_engine.sync_adjacent_nnis_with_dag()
+
+            if do_print_dag_stats:
+                print_v(f"# adjacent_nnis: {len(nni_engine.adjacent_nnis())}")
+                print_v(f"# new_adjacent_nnis: {len(nni_engine.new_adjacent_nnis())}")
+                if nni_inst.args.tp:
+                    print_v(f"# tp_branch_lengths: {nni_inst.dag_inst.get_tp_engine().get_branch_lengths()}")
+                if nni_inst.args.gp:
+                    print_v(f"gp_branch_lengths: {nni_inst.dag_inst.get_branch_lengths()}")
+
+            # begin inner loop
             timer.start()
             timer.start("full_iter")
             timer.start("inner_iter")
 
-            ### NNI_SEARCH MAIN_LOOP ###
-            # nni_engine.sync_adjacent_nnis_with_dag()
-            if do_print_dag_stats:
-                print_v("# adjacent_nnis:", len(nni_engine.adjacent_nnis()))
-                print_v("# new_adjacent_nnis:", len(nni_engine.new_adjacent_nnis()))
             timer.start()
-
             nni_engine.graft_adjacent_nnis_to_dag()
             timer.lap_next("graft_adjacent_nnis_to_dag")
 
+            timer.start()
             nni_engine.filter_pre_score()
             timer.lap_next("filter_pre_score")
 
+            timer.start()
             nni_engine.filter_score_adjacent_nnis()
             timer.lap_next("filter_score_adjacent_nnis")
-
-            # check for changes to the PVs.
-            if do_check_for_pv_map_changes:
-                print("#PV_CHECK_AFTER_SCORE_PROPOSED_NNIS")
-                current_pv_map = tracker.check_for_pv_hash_map_changes(pcsps)
-                current_pv_map = tracker.check_for_pv_value_map_changes(pcsps)
-                pass
 
             timer.start()
             nni_engine.filter_post_score()
             timer.lap_next("filter_post_score")
 
+            timer.stop("full_iter")
+            timer.stop("inner_iter")
             results.predata_mid_iter(iter_count, dag, nni_engine, pp_maps)
 
             if do_print_scored_nnis:
@@ -1203,31 +1213,42 @@ class Program:
             # if searching by pcsp and no nni has a pcsp pp over zero, end search.
             if args.pcsp and nni_inst.get_best_nni_score() <= 0.0:
                 break
+            timer.resume("full_iter")
+            timer.resume("inner_iter")
 
             timer.start()
             nni_engine.filter_evaluate_adjacent_nnis()
             timer.lap_next("filter_evaluate_adjacent_nnis")
 
+            timer.stop("inner_iter")
             if do_print_accepted_nnis:
                 nni_inst.print_accepted_nnis()
+            timer.resume("inner_iter")
 
             timer.start()
             nni_engine.remove_all_graft_nnis_from_dag()
             timer.lap_next("remove_all_graft_nnis_from_dag")
 
+            timer.start()
             nni_engine.add_accepted_nnis_to_dag()
             timer.lap_next("add_accepted_nnis_to_dag")
+
+            timer.stop("full_iter")
+            timer.lap_name("inner_iter")
+
+            # check that inner subroutine times sum to inner total time
+            if True:
+                inner_iter_total = 0.0
+                for subroutine_name in subroutine_names:
+                    inner_iter_total += timer.lap_last(subroutine_name)
+                print(f"#COMPARE inner_iter_total: {timer.lap_last('inner_iter')} {inner_iter_total}")
 
             # check for changes to the PVs.
             if do_check_for_pv_map_changes:
                 pcsps = dag.build_set_of_edge_bitsets()
-                print("#PV_CHECK_AFTER_ADD_ACCEPTED_NNIS")
                 current_pv_map = tracker.check_for_pv_hash_map_changes(pcsps)
                 current_pv_map = tracker.check_for_pv_value_map_changes(pcsps)
                 pass
-
-            timer.lap_name("inner_iter")
-            timer.stop("full_iter")
 
             ### LOG DATA ENTRY ###
             results.predata_end_iter(iter_count, dag, nni_engine, pp_maps)
@@ -1264,13 +1285,16 @@ class Program:
                 current_dag_score_map = tracker.check_for_dag_score_changes()
                 pass
 
+            # end iterations if no accepted nnis.
             if len(nni_engine.accepted_nnis()) == 0:
                 print_v("# NO ACCEPTED NNIS")
                 break
+
             timer.resume("full_iter")
             timer.start()
             nni_engine.run_post_loop()
             timer.lap_next("run_post_loop")
+            timer.stop("full_iter")
 
             # track changes made to dag.
             if do_check_for_dag_changes:
@@ -1279,6 +1303,7 @@ class Program:
 
             # bookmark by outputting top trees
             iter_count += 1
+            timer.resume("full_iter")
             timer.lap_name("full_iter")
             # end search if all credible edges have been found
             if do_end_when_all_creds_found and results.found_all_credible_edges():

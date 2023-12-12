@@ -323,33 +323,8 @@ class TPEngine {
   bool HasParsimonyEvalEngine() const { return parsimony_engine_ != nullptr; }
   void SelectParsimonyEvalEngine();
 
-  // Evaluation Engine - Access
-  EigenConstMatrixXdRef GetLikelihoodMatrix() {
-    Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
-    auto &log_likelihoods =
-        GetLikelihoodEvalEngine().GetDAGBranchHandler().GetBranchLengthData();
-    return log_likelihoods.block(0, 0, GetEdgeCount(), log_likelihoods.cols());
-  }
-  PLVEdgeHandler &GetLikelihoodPVs() {
-    Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
-    return GetLikelihoodEvalEngine().GetPVs();
-  }
-  const PLVEdgeHandler &GetLikelihoodPVs() const {
-    Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
-    return GetLikelihoodEvalEngine().GetPVs();
-  }
-  PSVEdgeHandler &GetParsimonyPVs() {
-    Assert(HasParsimonyEvalEngine(), "Must MakeParsimonyEvalEngine before access.");
-    return GetParsimonyEvalEngine().GetPVs();
-  }
-  const PSVEdgeHandler &GetParsimonyPVs() const {
-    Assert(HasParsimonyEvalEngine(), "Must MakeParsimonyEvalEngine before access.");
-    return GetParsimonyEvalEngine().GetPVs();
-  }
-  EigenVectorXd &GetBranchLengths() {
-    Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
-    return GetLikelihoodEvalEngine().GetDAGBranchHandler().GetBranchLengthData();
-  }
+  // ** Evaluation Engines
+
   const EigenVectorXd &GetBranchLengths() const {
     Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
     return GetLikelihoodEvalEngine().GetDAGBranchHandler().GetBranchLengthData();
@@ -362,17 +337,29 @@ class TPEngine {
     Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
     return GetLikelihoodEvalEngine().GetDAGBranchHandler();
   }
-  EigenVectorXd &GetTopTreeLikelihoods() {
+
+  // ** Evaluation Engine - Likelihood
+
+  // EigenConstMatrixXdRef GetLikelihoodMatrix() {
+  //   Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before
+  //   access."); auto &log_likelihoods =
+  //       GetLikelihoodEvalEngine().GetDAGBranchHandler().GetBranchLengthData();
+  //   return log_likelihoods.block(0, 0, GetEdgeCount(), log_likelihoods.cols());
+  // }
+  const PLVEdgeHandler &GetLikelihoodPVs() const {
     Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
-    return GetLikelihoodEvalEngine().GetTopTreeScores();
+    return GetLikelihoodEvalEngine().GetPVs();
   }
   const EigenVectorXd &GetTopTreeLikelihoods() const {
     Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
     return GetLikelihoodEvalEngine().GetTopTreeScores();
   }
-  EigenVectorXd &GetTopTreeParsimonies() {
+
+  // ** Evaluation Engine - Parsimony
+
+  const PSVEdgeHandler &GetParsimonyPVs() const {
     Assert(HasParsimonyEvalEngine(), "Must MakeParsimonyEvalEngine before access.");
-    return GetParsimonyEvalEngine().GetTopTreeScores();
+    return GetParsimonyEvalEngine().GetPVs();
   }
   const EigenVectorXd &GetTopTreeParsimonies() const {
     Assert(HasParsimonyEvalEngine(), "Must MakeParsimonyEvalEngine before access.");

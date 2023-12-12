@@ -12,13 +12,14 @@
 #include "gp_dag.hpp"
 #include "graft_dag.hpp"
 #include "nni_engine_key_index.hpp"
+#include "dag_branch_handler.hpp"
+#include "gp_engine.hpp"
+#include "tp_engine.hpp"
 
 using NNIDoubleMap = std::map<NNIOperation, double>;
 
 // Forward declaration.
 class NNIEngine;
-class TPEngine;
-class GPEngine;
 
 // NNIEngine helper for evaluation NNIs -- base class.
 class NNIEvalEngine {
@@ -103,6 +104,10 @@ class NNIEvalEngine {
   }
   // Get all Scored NNIs.
   const NNIDoubleMap &GetScoredNNIs() const { return scored_nnis_; }
+  // Get DAG branch handler.
+  const DAGBranchHandler &GetDAGBranchHandler() const {
+    Failwith("Pure vitual function.");
+  }
 
   // Retrieve Score for given NNI.
   double GetScoreByNNI(const NNIOperation &nni) const;
@@ -165,7 +170,7 @@ class NNIEvalEngine {
   // Whether new branches are initialized by referencing pre-NNI lengths.
   bool copy_new_edges_ = true;
   // Whether new branches are optimized.
-  bool optimize_new_edges_ = false;
+  bool optimize_new_edges_ = true;
   // Number of optimization iterations.
   size_t optimize_max_iter_ = 10;
 };
@@ -314,6 +319,10 @@ class NNIEvalEngineViaGP : public NNIEvalEngine {
   // Un-owned reference to GPEngine.
   GPEngine &GetGPEngine() { return *gp_engine_; }
   const GPEngine &GetGPEngine() const { return *gp_engine_; }
+  // Get DAG branch handler.
+  const DAGBranchHandler &GetDAGBranchHandler() const {
+    return GetGPEngine().GetBranchLengthHandler();
+  }
 
  protected:
   // Unowned reference to GPEngine.
@@ -372,6 +381,10 @@ class NNIEvalEngineViaTP : public NNIEvalEngine {
 
   TPEngine &GetTPEngine() { return *tp_engine_; }
   const TPEngine &GetTPEngine() const { return *tp_engine_; }
+  // Get DAG branch handler.
+  const DAGBranchHandler &GetDAGBranchHandler() const {
+    return GetTPEngine().GetDAGBranchHandler();
+  }
 
  protected:
   TPEngine *tp_engine_;

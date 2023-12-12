@@ -179,6 +179,19 @@ void NNIEngine::UpdateEvalEngineAfterModifyingDAG(
   }
 }
 
+const DAGBranchHandler &NNIEngine::GetDAGBranchHandler() const {
+  if (IsEvalEngineInUse(NNIEvalEngineType::GPEvalEngine)) {
+    return GetGPEvalEngine().GetDAGBranchHandler();
+  }
+  if (IsEvalEngineInUse(NNIEvalEngineType::TPEvalEngineViaLikelihood)) {
+    return GetTPEvalEngine().GetDAGBranchHandler();
+  }
+  if (IsEvalEngineInUse(NNIEvalEngineType::TPEvalEngineViaParsimony)) {
+    return GetTPEvalEngine().GetDAGBranchHandler();
+  }
+  Failwith("Invalid given EvalEngineType.");
+}
+
 // ** Runners
 
 void NNIEngine::Run(const bool is_quiet) {
