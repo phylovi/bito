@@ -91,7 +91,6 @@ void NNIEvalEngineViaGP::UpdateEngineAfterModifyingDAG(
     const std::map<NNIOperation, NNIOperation> &pre_nni_to_nni,
     const size_t prev_node_count, const Reindexer &node_reindexer,
     const size_t prev_edge_count, const Reindexer &edge_reindexer) {
-  std::cout << "GPEngine::UpdateEngineAfterModifying [BEGIN]" << std::endl;
   using namespace GPOperations;
   auto &branch_handler = GetGPEngine().GetBranchLengthHandler();
   // Find all new edge ids.
@@ -110,7 +109,6 @@ void NNIEvalEngineViaGP::UpdateEngineAfterModifyingDAG(
   }
   // Copy over branch lengths from pre-NNI to post-NNI.
   if (copy_new_edges_) {
-    std::cout << "GPEngine::UpdateEngineAfterModifying [copy new edges]" << std::endl;
     for (const auto &[pre_nni, nni] : pre_nni_to_nni) {
       CopyGPEngineDataAfterAddingNNI(pre_nni, nni);
     }
@@ -133,9 +131,6 @@ void NNIEvalEngineViaGP::UpdateEngineAfterModifyingDAG(
 
   // Optimize branch lengths.
   if (optimize_new_edges_) {
-    std::cout << "GPEngine::UpdateEngineAfterModifying [optimize new edges]"
-              << std::endl;
-
     // for (const auto &[pre_nni, nni] : pre_nni_to_nni) {
     //   std::ignore = pre_nni;
     //   NNIBranchLengthOptimization(nni, new_edge_ids);
