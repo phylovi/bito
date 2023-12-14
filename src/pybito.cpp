@@ -824,8 +824,9 @@ PYBIND11_MODULE(bito, m) {
           "Add parent/child subsplit pair to DAG.")
       .def("add_nodes", &GPDAG::AddNodes)
       .def("add_edges", &GPDAG::AddEdges)
-      .def("fully_connect", &GPDAG::FullyConnect,
-           "Adds all valid edges with present nodes to the DAG.")
+      .def(
+          "fully_connect", [](GPDAG &self) { self.FullyConnect(); },
+          "Adds all valid edges with present nodes to the DAG.")
       // ** I/O
       .def("tree_to_newick_topology", &GPDAG::TreeToNewickTopology)
       .def("tree_to_newick_tree", &GPDAG::TreeToNewickTree)
@@ -1060,6 +1061,31 @@ PYBIND11_MODULE(bito, m) {
            "Set whether to re-evaluate NNIs rejected by a previous iteration.")
       .def("set_rescore_rejected_nnis", &NNIEngine::SetRescoreRejectedNNIs,
            "Set whether to re-score NNIs rejected by a previous iteration.")
+      ////////////////////////////////
+      .def(
+          "is_optimize_on_init",
+          [](NNIEngine &self) { return self.GetEvalEngine().IsOptimizeOnInit(); },
+          "...")
+      .def(
+          "is_optimize_new_edges",
+          [](NNIEngine &self) { return self.GetEvalEngine().IsOptimizeNewEdges(); },
+          "...")
+      .def(
+          "is_copy_new_edges",
+          [](NNIEngine &self) { return self.GetEvalEngine().IsCopyNewEdges(); }, "...")
+      .def(
+          "GetOptimizationMaxIteration",
+          [](NNIEngine &self) {
+            return self.GetEvalEngine().GetOptimizationMaxIteration();
+          },
+          "...")
+      .def(
+          "set_optimize_new_edges",
+          [](NNIEngine &self, const bool optimize) {
+            self.GetEvalEngine().SetOptimizeNewEdges(optimize);
+          },
+          "...")
+      /////////////////////////////////
       // Scoring
       .def("get_score_by_nni", &NNIEngine::GetScoreByNNI, "Get score by NNI.")
       .def("get_score_by_edge", &NNIEngine::GetScoreByEdge, "Get score by EdgeId.");
