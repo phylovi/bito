@@ -140,8 +140,6 @@ void NNIEvalEngineViaGP::UpdateEngineAfterModifyingDAG(
   }
 
   GetGPEngine().ProcessOperations(GetDAG().ComputeLikelihoods());
-  auto likelihoods = GetGPEngine().GetPerGPCSPLogLikelihoods();
-  std::cout << "GPEngine::UpdateEngineAfterModifying [END]" << std::endl;
 }
 
 void NNIEvalEngineViaGP::CopyGPEngineDataAfterAddingNNI(const NNIOperation &pre_nni,

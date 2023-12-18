@@ -326,26 +326,32 @@ class TPEngine {
   // ** Evaluation Engines
 
   const EigenVectorXd &GetBranchLengths() const {
-    Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
-    return GetLikelihoodEvalEngine().GetDAGBranchHandler().GetBranchLengthData();
+    if (HasLikelihoodEvalEngine()) {
+      return GetLikelihoodEvalEngine().GetDAGBranchHandler().GetBranchLengthData();
+    }
+    Failwith("EvalEngine Type does not have branch lengths.");
   }
   DAGBranchHandler &GetDAGBranchHandler() {
-    Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
-    return GetLikelihoodEvalEngine().GetDAGBranchHandler();
+    if (HasLikelihoodEvalEngine()) {
+      return GetLikelihoodEvalEngine().GetDAGBranchHandler();
+    }
+    Failwith("EvalEngine Type does not have branch lengths.");
   }
   const DAGBranchHandler &GetDAGBranchHandler() const {
-    Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
-    return GetLikelihoodEvalEngine().GetDAGBranchHandler();
+    if (HasLikelihoodEvalEngine()) {
+      return GetLikelihoodEvalEngine().GetDAGBranchHandler();
+    }
+    Failwith("EvalEngine Type does not have branch lengths.");
   }
 
   // ** Evaluation Engine - Likelihood
 
-  // EigenConstMatrixXdRef GetLikelihoodMatrix() {
-  //   Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before
-  //   access."); auto &log_likelihoods =
-  //       GetLikelihoodEvalEngine().GetDAGBranchHandler().GetBranchLengthData();
-  //   return log_likelihoods.block(0, 0, GetEdgeCount(), log_likelihoods.cols());
-  // }
+  EigenConstMatrixXdRef GetLikelihoodMatrix() {
+    Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
+    auto &log_likelihoods =
+        GetLikelihoodEvalEngine().GetDAGBranchHandler().GetBranchLengthData();
+    return log_likelihoods.block(0, 0, GetEdgeCount(), log_likelihoods.cols());
+  }
   const PLVEdgeHandler &GetLikelihoodPVs() const {
     Assert(HasLikelihoodEvalEngine(), "Must MakeLikelihoodEvalEngine before access.");
     return GetLikelihoodEvalEngine().GetPVs();

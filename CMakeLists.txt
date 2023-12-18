@@ -5,7 +5,6 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})
   message(WARNING "ERROR: CMake build directory cannot be the same as root source directory. HINT: Can build with `make`.")
 endif()
 
-set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
 project(bito)
@@ -38,6 +37,8 @@ if(GIT_FOUND)
     ERROR_QUIET
   )
 endif()
+
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/sugar_version.hpp.in" "${CMAKE_CURRENT_SOURCE_DIR}/src/sugar_version.hpp" @ONLY)
 
 set(CMAKE_SKIP_RPATH ON)
 execute_process(COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/get_rpath.py
@@ -74,9 +75,6 @@ option(PROFILING "Compile with debugger and profiling symbols" OFF)
 function(bito_compile_opts PRODUCT WERROR_)
   target_compile_features(${PRODUCT} PUBLIC cxx_std_17)
   target_compile_options(${PRODUCT} PUBLIC -Wno-unknown-warning -Wno-unknown-warning-option -Wall)
-  target_compile_definitions(${PRODUCT} PUBLIC -DGIT_HASH="${GIT_HASH}")
-  target_compile_definitions(${PRODUCT} PUBLIC -DGIT_BRANCH="${GIT_BRANCH}")
-  target_compile_definitions(${PRODUCT} PUBLIC -DGIT_TAGS="${GIT_TAGS}")
 
   if(${WERROR_})
     target_compile_options(${PRODUCT} PUBLIC -Werror)

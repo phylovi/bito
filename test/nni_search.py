@@ -1177,10 +1177,9 @@ class Program:
             if do_print_dag_stats:
                 print_v(f"# adjacent_nnis: {len(nni_engine.adjacent_nnis())}")
                 print_v(f"# new_adjacent_nnis: {len(nni_engine.new_adjacent_nnis())}")
-                if nni_inst.args.tp:
-                    print_v(f"# tp_branch_lengths: {nni_inst.dag_inst.get_tp_engine().get_branch_lengths()}")
-                if nni_inst.args.gp:
-                    print_v(f"gp_branch_lengths: {nni_inst.dag_inst.get_branch_lengths()}")
+                if nni_inst.args.tp or nni_inst.args.gp:
+                    bls = nni_engine.get_branch_lengths()
+                    print_v(f"# branch_lengths: {len(bls)} {bls}")
 
             # begin inner loop
             timer.start()

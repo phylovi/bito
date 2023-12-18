@@ -15,7 +15,7 @@ class Version {
   static std::string GetGitTags() { return git_tags_; }
 
  private:
-  static inline const std::string git_hash_ = "f045cf5";
-  static inline const std::string git_branch_ = "483-nni-search-gp-branch-lengths-fix";
-  static inline const std::string git_tags_ = "";
+  static inline const std::string git_hash_ = "@GIT_HASH@";
+  static inline const std::string git_branch_ = "@GIT_BRANCH@";
+  static inline const std::string git_tags_ = "@GIT_TAGS@";
 };
