@@ -824,8 +824,9 @@ PYBIND11_MODULE(bito, m) {
           "Add parent/child subsplit pair to DAG.")
       .def("add_nodes", &GPDAG::AddNodes)
       .def("add_edges", &GPDAG::AddEdges)
-      .def("fully_connect", &GPDAG::FullyConnect,
-           "Adds all valid edges with present nodes to the DAG.")
+      .def(
+          "fully_connect", [](GPDAG &self) { self.FullyConnect(); },
+          "Adds all valid edges with present nodes to the DAG.")
       // ** I/O
       .def("tree_to_newick_topology", &GPDAG::TreeToNewickTopology)
       .def("tree_to_newick_tree", &GPDAG::TreeToNewickTree)
