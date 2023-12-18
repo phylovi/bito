@@ -131,11 +131,6 @@ void NNIEvalEngineViaGP::UpdateEngineAfterModifyingDAG(
 
   // Optimize branch lengths.
   if (optimize_new_edges_) {
-    // for (const auto &[pre_nni, nni] : pre_nni_to_nni) {
-    //   std::ignore = pre_nni;
-    //   NNIBranchLengthOptimization(nni, new_edge_ids);
-    // }
-    // GetGPEngine().ProcessOperations(GetDAG().PopulatePLVs());
     BranchLengthOptimization();
   }
 

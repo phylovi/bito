@@ -38,7 +38,7 @@ if(GIT_FOUND)
   )
 endif()
 
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/sugar_version.hpp.in" "${CMAKE_CURRENT_SOURCE_DIR}/src/sugar_version.hpp" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/sugar_version.hpp.in" "${CMAKE_CURRENT_BINARY_DIR}/src/sugar_version.hpp" @ONLY)
 
 set(CMAKE_SKIP_RPATH ON)
 execute_process(COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/get_rpath.py
@@ -89,6 +89,7 @@ function(bito_compile_opts PRODUCT WERROR_)
   target_include_directories(${PRODUCT} PUBLIC
     ${PROJECT_BINARY_DIR}/beagle-lib/install/include/libhmsbeagle-1
     lib/eigen
+    ${PROJECT_BINARY_DIR}/src
   )
 endfunction()
 
