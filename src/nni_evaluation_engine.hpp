@@ -106,7 +106,7 @@ class NNIEvalEngine {
   const NNIDoubleMap &GetScoredNNIs() const { return scored_nnis_; }
   // Get DAG branch handler.
   const DAGBranchHandler &GetDAGBranchHandler() const {
-    Failwith("Pure vitual function.");
+    Failwith("Pure virtual function call.");
   }
 
   // Retrieve Score for given NNI.
