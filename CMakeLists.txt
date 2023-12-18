@@ -5,6 +5,7 @@ if(${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})
   message(WARNING "ERROR: CMake build directory cannot be the same as root source directory. HINT: Can build with `make`.")
 endif()
 
+set(CMAKE_DISABLE_SOURCE_CHANGES ON)
 set(CMAKE_DISABLE_IN_SOURCE_BUILD ON)
 
 project(bito)
@@ -38,7 +39,7 @@ if(GIT_FOUND)
   )
 endif()
 
-configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/sugar_version.hpp.in" "${CMAKE_CURRENT_BINARY_DIR}/src/sugar_version.hpp" @ONLY)
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/sugar_version.hpp.in" "${PROJECT_BINARY_DIR}/src/sugar_version.hpp" @ONLY)
 
 set(CMAKE_SKIP_RPATH ON)
 execute_process(COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/get_rpath.py
