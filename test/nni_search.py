@@ -1045,10 +1045,12 @@ class Program:
         subparser1.add_argument('--opt-max', help='Maximum number of iterations of branch length optimization.',
                                 type=int, default=optimization_max_iteration)
         # options
-        subparser1.add_argument('-o', '--output', help='output file', type=str,
-                                default='results.nni_search.csv')
+        subparser1.add_argument('-o', '--output', help='output csv file', type=str,
+                                default='_out/results.nni_search.csv')
+        subparser1.add_argument('--no-output', action='store_true',
+                                help='Do not save csv results file.')
         subparser1.add_argument(
-            '--iter-max', help='number of NNI search iterations', type=int, default=10)
+            '--iter-max', help='Number of NNI search iterations', type=int, default=10)
         subparser1.add_argument(
             '--test', help='Compare NNI results to a golden run.', type=str)
         subparser1.add_argument(
@@ -1312,7 +1314,11 @@ class Program:
             print_v("--- + ---")
 
         # write final results to file
-        df = results.write_dataframe_to_file(args.output)
+        df = results.data_
+        print(f"OUTER args.no_output: {args.no_output}")
+        if not args.no_output:
+            print(f"INNER args.no_output: {args.no_output}")
+            results.write_dataframe_to_file(args.output)
 
         ### SUMMARY OUTPUT ###
         if do_print_tracker_summary:

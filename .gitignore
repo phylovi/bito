@@ -48,6 +48,8 @@ _modules
 _sources
 .RData
 .Rhistory
+test/_ignore/*
+test/_out/*
 
 # Python packaging
 dist/
@@ -60,7 +62,7 @@ src/CMakeLists.txt
 .DS_Store
 ._.DS_Store
 
-# Developer Tools 
+# Developer Tools
 .vscode
 *.code-workspace
 .gdbinit
