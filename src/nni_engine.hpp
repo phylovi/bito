@@ -217,8 +217,6 @@ class NNIEngine {
   // Reset number of iterations.
   void ResetIterationCount() { iter_count_ = 0; }
 
-  // ** Counts
-
   // ** NNI Evaluation Engine
 
   // Set GP Engine.
@@ -226,7 +224,7 @@ class NNIEngine {
   // Set TP Engine.
   NNIEvalEngineViaTP &MakeTPEvalEngine(TPEngine *tp_engine);
   // Check if evaluation engine is currently in use.
-  bool IsEvalEngineInUse(const NNIEvalEngineType eval_engine_type) {
+  bool IsEvalEngineInUse(const NNIEvalEngineType eval_engine_type) const {
     return eval_engine_in_use_[eval_engine_type];
   }
   // Remove all evaluation engines from use.
@@ -257,6 +255,13 @@ class NNIEngine {
   // resized).
   void GrowEvalEngineForAdjacentNNIs(const bool via_reference = true,
                                      const bool use_unique_temps = false);
+
+  // Get evaluation engine's branch length handler.
+  const DAGBranchHandler &GetDAGBranchHandler() const;
+  // Get branch lengths.
+  const EigenVectorXd GetBranchLengths() const {
+    return GetDAGBranchHandler().GetBranchLengths().GetDAGData();
+  }
 
   // ** Runners
   // These start the engine, which procedurally ranks and adds (and maybe removes) NNIs

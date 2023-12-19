@@ -39,6 +39,8 @@ if(GIT_FOUND)
   )
 endif()
 
+configure_file("${CMAKE_CURRENT_SOURCE_DIR}/src/sugar_version.hpp.in" "${PROJECT_BINARY_DIR}/src/sugar_version.hpp" @ONLY)
+
 set(CMAKE_SKIP_RPATH ON)
 execute_process(COMMAND ${Python_EXECUTABLE} ${PROJECT_SOURCE_DIR}/get_rpath.py
   OUTPUT_VARIABLE BITO_RPATH
@@ -74,9 +76,6 @@ option(PROFILING "Compile with debugger and profiling symbols" OFF)
 function(bito_compile_opts PRODUCT WERROR_)
   target_compile_features(${PRODUCT} PUBLIC cxx_std_17)
   target_compile_options(${PRODUCT} PUBLIC -Wno-unknown-warning -Wno-unknown-warning-option -Wall)
-  target_compile_definitions(${PRODUCT} PUBLIC -DGIT_HASH="${GIT_HASH}")
-  target_compile_definitions(${PRODUCT} PUBLIC -DGIT_BRANCH="${GIT_BRANCH}")
-  target_compile_definitions(${PRODUCT} PUBLIC -DGIT_TAGS="${GIT_TAGS}")
 
   if(${WERROR_})
     target_compile_options(${PRODUCT} PUBLIC -Werror)
@@ -91,6 +90,7 @@ function(bito_compile_opts PRODUCT WERROR_)
   target_include_directories(${PRODUCT} PUBLIC
     ${PROJECT_BINARY_DIR}/beagle-lib/install/include/libhmsbeagle-1
     lib/eigen
+    ${PROJECT_BINARY_DIR}/src
   )
 endfunction()
 

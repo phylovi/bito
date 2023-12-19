@@ -72,9 +72,9 @@ class DAGData {
   VectorType &GetData() { return data_vec_; }
   const VectorType &GetData() const { return data_vec_; }
   // Get data corresponding to the DAG elements.
-  VectorType GetDAGData() { return data_vec_.segment(0, GetCount()); }
+  VectorType GetDAGData() const { return data_vec_.segment(0, GetCount()); }
   // Get data corresponding to the DAG elements, including spare elements.
-  VectorType GetPaddedDAGData() { return data_vec_.segment(0, GetPaddedCount()); }
+  VectorType GetPaddedDAGData() const { return data_vec_.segment(0, GetPaddedCount()); }
   // Get data corresponding to the DAG elements.
   void SetDAGData(const VectorType &data_vec) {
     Assert(GetCount() == size_t(data_vec.size()),

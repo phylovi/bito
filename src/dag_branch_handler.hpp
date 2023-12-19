@@ -16,43 +16,13 @@
 class DAGBranchHandler {
  public:
   DAGBranchHandler(const size_t count,
-                   std::optional<OptimizationMethod> method = std::nullopt)
-      : branch_lengths_(count), differences_(count) {
-    if (method.has_value()) {
-      SetOptimizationMethod(method.value());
-    }
-    branch_lengths_.SetDefaultValue(init_default_branch_length_);
-    branch_lengths_.FillWithDefault();
-    differences_.SetDefaultValue(init_default_difference_);
-    differences_.FillWithDefault();
-  }
-  DAGBranchHandler(GPDAG& dag, std::optional<OptimizationMethod> method = std::nullopt)
-      : branch_lengths_(dag), differences_(dag), dag_(&dag) {
-    if (method.has_value()) {
-      SetOptimizationMethod(method.value());
-    }
-    branch_lengths_.SetDefaultValue(init_default_branch_length_);
-    branch_lengths_.FillWithDefault();
-    differences_.SetDefaultValue(init_default_difference_);
-    differences_.FillWithDefault();
-  }
+                   std::optional<OptimizationMethod> method = std::nullopt);
+  DAGBranchHandler(GPDAG& dag, std::optional<OptimizationMethod> method = std::nullopt);
 
   // ** Comparators
 
-  static int Compare(const DAGBranchHandler& lhs, const DAGBranchHandler& rhs) {
-    if (lhs.size() != rhs.size()) {
-      return lhs.size() - rhs.size();
-    }
-    for (EdgeId edge_id{0}; edge_id < lhs.size(); edge_id++) {
-      if (lhs.Get(edge_id) != rhs.Get(edge_id)) {
-        return lhs.Get(edge_id) - rhs.Get(edge_id);
-      }
-    }
-    return 0;
-  }
-  friend bool operator==(const DAGBranchHandler& lhs, const DAGBranchHandler& rhs) {
-    return Compare(lhs, rhs) == 0;
-  }
+  static int Compare(const DAGBranchHandler& lhs, const DAGBranchHandler& rhs);
+  friend bool operator==(const DAGBranchHandler& lhs, const DAGBranchHandler& rhs);
 
   // ** Counts
 
@@ -254,55 +224,12 @@ class DAGBranchHandler {
   // out PCSP bitset to find corresponding DAG EdgeId, to find branch length.
   static RootedTree BuildTreeWithBranchLengthsFromTopology(
       const GPDAG& dag, const DAGBranchHandler& dag_branch_handler,
-      const Node::Topology& topology) {
-    Tree::BranchLengthVector tree_branch_lengths(2 * topology->LeafCount() - 1, 0.0);
-
-    topology->RootedPCSPPreorder(
-        [&dag, &dag_branch_handler, &tree_branch_lengths](
-            const Node* sister, const Node* focal, const Node* child_left,
-            const Node* child_right) {
-          Bitset parent_subsplit = Bitset::Subsplit(sister->Leaves(), focal->Leaves());
-          Bitset child_subsplit =
-              Bitset::Subsplit(child_left->Leaves(), child_right->Leaves());
-          EdgeId focal_edge_id = dag.GetEdgeIdx(parent_subsplit, child_subsplit);
-          tree_branch_lengths[focal->Id()] = dag_branch_handler(focal_edge_id);
-
-          // If adjacent nodes go to leaves.
-          if (sister->IsLeaf()) {
-            Bitset subsplit = Bitset::LeafSubsplitOfNonemptyClade(sister->Leaves());
-            EdgeId edge_id = dag.GetEdgeIdx(parent_subsplit, subsplit);
-            tree_branch_lengths[sister->Id()] = dag_branch_handler(edge_id);
-          }
-          if (child_left->IsLeaf()) {
-            Bitset subsplit = Bitset::LeafSubsplitOfNonemptyClade(child_left->Leaves());
-            EdgeId edge_id = dag.GetEdgeIdx(child_subsplit, subsplit);
-            tree_branch_lengths[child_left->Id()] = dag_branch_handler(edge_id);
-          }
-          if (child_right->IsLeaf()) {
-            Bitset subsplit =
-                Bitset::LeafSubsplitOfNonemptyClade(child_right->Leaves());
-            EdgeId edge_id = dag.GetEdgeIdx(child_subsplit, subsplit);
-            tree_branch_lengths[child_right->Id()] = dag_branch_handler(edge_id);
-          }
-        },
-        false);
-
-    return RootedTree(topology, std::move(tree_branch_lengths));
-  }
+      const Node::Topology& topology);
 
   // Copies branch lengths from one handler to another. Base DAG of dest handler must be
   // a subgraph of src handler.
   static void CopyOverBranchLengths(const DAGBranchHandler& src,
-                                    DAGBranchHandler& dest) {
-    const auto& src_dag = src.GetDAG();
-    const auto& dest_dag = dest.GetDAG();
-    for (EdgeId dest_id = 0; dest_id < dest_dag.EdgeCountWithLeafSubsplits();
-         dest_id++) {
-      const auto& pcsp = dest_dag.GetDAGEdgeBitset(dest_id);
-      const auto src_id = src_dag.GetEdgeIdx(pcsp);
-      dest.Get(dest_id) = src.Get(src_id);
-    }
-  }
+                                    DAGBranchHandler& dest);
 
  protected:
   // ** Branch Length Optimization Helpers

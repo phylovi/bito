@@ -824,8 +824,9 @@ PYBIND11_MODULE(bito, m) {
           "Add parent/child subsplit pair to DAG.")
       .def("add_nodes", &GPDAG::AddNodes)
       .def("add_edges", &GPDAG::AddEdges)
-      .def("fully_connect", &GPDAG::FullyConnect,
-           "Adds all valid edges with present nodes to the DAG.")
+      .def(
+          "fully_connect", [](GPDAG &self) { self.FullyConnect(); },
+          "Adds all valid edges with present nodes to the DAG.")
       // ** I/O
       .def("tree_to_newick_topology", &GPDAG::TreeToNewickTopology)
       .def("tree_to_newick_tree", &GPDAG::TreeToNewickTree)
@@ -888,7 +889,7 @@ PYBIND11_MODULE(bito, m) {
       .def("get_top_tree_topology_with_edge", &TPEngine::GetTopTopologyWithEdge,
            "Output the top tree of tree containing given edge.")
       // ** Branch Length Optimization
-      .def("get_branch_lengths", [](TPEngine &self) { self.GetBranchLengths(); })
+      .def("get_branch_lengths", [](TPEngine &self) { return self.GetBranchLengths(); })
       .def("optimize_branch_lengths", &TPEngine::OptimizeBranchLengths,
            py::arg("check_branch_convergence") = std::nullopt)
       // ** Settings
@@ -946,6 +947,8 @@ PYBIND11_MODULE(bito, m) {
       .def(
           "get_graft_dag", [](NNIEngine &self) { return self.GetGraftDAG(); },
           py::return_value_policy::reference, "Get the Graft DAG.")
+      .def("get_branch_lengths", &NNIEngine::GetBranchLengths,
+           "Get DAG branch lengths.")
       // NNI Sets
       .def("adjacent_nnis", &NNIEngine::GetAdjacentNNIs, "Get NNIs adjacent to DAG.")
       .def("new_adjacent_nnis", &NNIEngine::GetNewAdjacentNNIs,
@@ -1061,7 +1064,6 @@ PYBIND11_MODULE(bito, m) {
       // Scoring
       .def("get_score_by_nni", &NNIEngine::GetScoreByNNI, "Get score by NNI.")
       .def("get_score_by_edge", &NNIEngine::GetScoreByEdge, "Get score by EdgeId.");
-
   py::class_<SankoffHandler> parsimony_engine_class(
       m, "parsimony_tree_engine",
       "An engine that computes parsimonies for tree topologies.");
